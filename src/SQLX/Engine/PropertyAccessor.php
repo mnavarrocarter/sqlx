@@ -25,17 +25,17 @@ interface PropertyAccessor
      *
      * @throws NonexistentProperty if the property does not exist
      */
-    public function set(object $object, string $property, mixed $value): void;
+    public function set(string $scope, string $property, mixed $value): void;
 
     /**
      * Gets all the properties for an object.
      *
      * @throws NonexistentProperty if the property does not exist
      */
-    public function get(object $object, string $property): mixed;
+    public function get(string $scope, string $property): mixed;
 
     /**
      * Checks whether a property exists in the object.
      */
-    public function has(object $object, string $property): bool;
+    public function has(string $scope, string $property): bool;
 }

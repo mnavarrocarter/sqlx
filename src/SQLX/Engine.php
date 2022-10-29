@@ -53,7 +53,7 @@ class Engine
 
         $namer = $config->getNamer() ?? new Underscore();
 
-        $accessor = $config->getAccessorStore() ?? new PropertyAccessor\Store\Efficient();
+        $accessor = $config->getAccessorStore() ?? new PropertyAccessor\Store\ClosureBased();
         $metadata = $config->getMetadataStore() ?? new Metadata\Store\Reflection($namer);
         $operator = new Operator\Immediate($config->getConnection());
 

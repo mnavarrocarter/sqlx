@@ -21,8 +21,11 @@ use Attribute;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class Field
 {
-    public const LABEL_AUTOINCREMENT = 'autoincrement';
-    public const LABEL_ID = 'id';
+    public const META_FLAGS = 'flags';
+    public const FLAG_ID = 1;
+    public const FLAG_AUTOINCREMENT = 2;
+
+    public const META_SCOPE = 'scope';
 
     /**
      * The property type.
@@ -52,9 +55,9 @@ class Field
     /**
      * The labels of the field.
      *
-     * @var string[]
+     * @var array<string,mixed>
      */
-    public array $labels = [];
+    public array $meta = [];
 
     /**
      * @param string[] $labels
@@ -72,16 +75,16 @@ class Field
         $this->name = $name;
         $this->nullable = $nullable;
         $this->default = $default;
-        $this->labels = $labels;
+        $this->meta = $labels;
     }
 
     public function isId(): bool
     {
-        return in_array(self::LABEL_ID, $this->labels, true);
+        return (($this->meta[self::META_FLAGS] ?? 0) & self::FLAG_ID) !== 0;
     }
 
     public function isAutoincrement(): bool
     {
-        return in_array(self::LABEL_AUTOINCREMENT, $this->labels, true);
+        return (($this->meta[self::META_FLAGS] ?? 0) & self::FLAG_AUTOINCREMENT) !== 0;
     }
 }

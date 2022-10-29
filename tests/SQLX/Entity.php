@@ -20,7 +20,7 @@ use DateTimeImmutable;
 
 abstract class Entity
 {
-    protected DateTimeImmutable $createdAt;
+    private DateTimeImmutable $createdAt;
 
     public function __construct()
     {

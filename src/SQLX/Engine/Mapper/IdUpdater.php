@@ -76,7 +76,7 @@ class IdUpdater
         $accessor = $this->accessor->create($entity);
 
         try {
-            $accessor->set($entity, $field->name, $value);
+            $accessor->set($field->meta[Metadata\Field::META_SCOPE] ?? $class, $field->name, $value);
         } catch (PropertyAccessor\NonexistentProperty $e) {
             throw new EngineError('Error while updating inserted id', 0, $e);
         }

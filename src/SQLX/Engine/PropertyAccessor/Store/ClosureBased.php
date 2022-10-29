@@ -19,16 +19,20 @@ namespace MNC\SQLX\Engine\PropertyAccessor\Store;
 use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\PropertyAccessor\Store;
 
-final class Efficient implements Store
+final class ClosureBased implements Store
 {
-    public ?PropertyAccessor\Efficient $instance = null;
+    private ?PropertyAccessor\ClosureBased $cached = null;
 
     public function create(object $object): PropertyAccessor
     {
-        if (null === $this->instance) {
-            $this->instance = new PropertyAccessor\Efficient();
+        if (null === $this->cached) {
+            $this->cached = PropertyAccessor\ClosureBased::make($object);
+
+            return $this->cached;
         }
 
-        return $this->instance;
+        $this->cached->changeRef($object);
+
+        return $this->cached;
     }
 }

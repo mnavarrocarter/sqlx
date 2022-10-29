@@ -21,6 +21,7 @@ use LogicException;
 use MNC\SQLX\Engine\Mapper\Classname;
 use MNC\SQLX\Engine\Mapper\IdUpdater;
 use MNC\SQLX\Engine\Mapper\LastId;
+use MNC\SQLX\Engine\Metadata\Field;
 use MNC\SQLX\Engine\Operator\Cmd;
 use MNC\SQLX\SQL\Mapper;
 use MNC\SQLX\SQL\Mapper\ConversionError;
@@ -113,7 +114,7 @@ final class EntityMapper extends Mapper\Middleware
             }
 
             try {
-                $value = $accessor->get($object, $field->name);
+                $value = $accessor->get($field->meta[Field::META_SCOPE] ?? get_class($object), $field->name);
                 $value = $next->toDatabaseValue($ctx, $value);
             } catch (Mapper\ConversionError|PropertyAccessor\NonexistentProperty $e) {
                 throw new Mapper\ConversionError(sprintf(

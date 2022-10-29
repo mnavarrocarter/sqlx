@@ -155,6 +155,9 @@ final class Reflection implements Store
             $field->default = $prop->getDefaultValue();
         }
 
+        // We put the scope
+        $field->meta[Metadata\Field::META_SCOPE] = $class;
+
         // Is this field part of an id?
         $id = ($prop->getAttributes(Metadata\Id::class)[0] ?? null)?->newInstance();
 
@@ -164,7 +167,7 @@ final class Reflection implements Store
             return;
         }
 
-        $field->labels[] = Metadata\Field::LABEL_ID;
+        $flags = Metadata\Field::FLAG_ID;
 
         // If id is int, most likely is autoincrement
         if (null === $id->autoincrement) {
@@ -172,8 +175,10 @@ final class Reflection implements Store
         }
 
         if ($id->autoincrement) {
-            $field->labels[] = Metadata\Field::LABEL_AUTOINCREMENT;
+            $flags = Metadata\Field::FLAG_ID | Metadata\Field::FLAG_AUTOINCREMENT;
         }
+
+        $field->meta[Metadata\Field::META_FLAGS] = $flags;
 
         $metadata->addField($field);
     }
