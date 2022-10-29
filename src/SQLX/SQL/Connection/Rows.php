@@ -16,14 +16,24 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Connection;
 
-interface Rows
+use Traversable;
+
+interface Rows extends Traversable
 {
+    /**
+     * @throws ScanError
+     */
     public function scanAssoc(array &$value): void;
 
     /**
      * @param array $values
+     *
+     * @throws ScanError
      */
     public function scan(mixed &...$values): void;
 
+    /**
+     * @throws ScanError
+     */
     public function toArray(): array;
 }

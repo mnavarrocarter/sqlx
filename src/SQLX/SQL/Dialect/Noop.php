@@ -14,12 +14,24 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator\Cmd;
+namespace MNC\SQLX\SQL\Dialect;
 
-class Record extends Table
+use MNC\SQLX\SQL\Dialect;
+
+class Noop implements Dialect
 {
-    /**
-     * @var array<string,mixed>
-     */
-    public array $values = [];
+    public function quoteTable(string $table): string
+    {
+        return $table;
+    }
+
+    public function quoteColumn(string $column): string
+    {
+        return $column;
+    }
+
+    public function cleanValue(mixed $value): mixed
+    {
+        return $value;
+    }
 }

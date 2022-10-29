@@ -14,9 +14,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator\Cmd;
+namespace MNC\SQLX\Engine\Finder;
 
-abstract class Table
+interface Sortable
 {
-    public string $table = '';
+    public const ORDER_ASC = 'ASC';
+    public const ORDER_DESC = 'DESC';
+
+    /**
+     * Adds a clause to sort by.
+     */
+    public function sortBy(string $field, string $order = self::ORDER_ASC): Sortable;
 }

@@ -17,22 +17,23 @@ declare(strict_types=1);
 namespace MNC\SQLX;
 
 use Castor\Context;
-use LogicException;
 use MNC\SQLX\Engine\EntityMapper;
+use MNC\SQLX\Engine\Finder;
+use MNC\SQLX\Engine\Mapper\FindClass;
 use MNC\SQLX\Engine\Mapper\IdUpdater;
 use MNC\SQLX\Engine\Mapper\LastId;
 use MNC\SQLX\Engine\Metadata;
 use MNC\SQLX\Engine\Namer\Underscore;
-use MNC\SQLX\Engine\Operator;
 use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\Tracker;
 use MNC\SQLX\SQL\Connection;
 use MNC\SQLX\SQL\Mapper;
+use MNC\SQLX\SQL\Statement;
 
 class Engine
 {
     public function __construct(
-        private Operator $operator,
+        private Connection $connection,
         private Tracker $tracker,
         private EntityMapper $mapper,
     ) {
@@ -54,10 +55,9 @@ class Engine
 
         $accessor = $config->getAccessorStore() ?? new PropertyAccessor\Store\ClosureBased();
         $metadata = $config->getMetadataStore() ?? new Metadata\Store\Reflection($namer);
-        $operator = new Operator\Immediate($config->getConnection());
 
         return new self(
-            $operator,
+            $config->getConnection(),
             $config->getTracker() ?? new Tracker\InMemory(),
             new EntityMapper($mapper, $metadata, $accessor)
         );
@@ -68,27 +68,21 @@ class Engine
      *
      * @throws EngineError
      */
-    public function findOne(Context $ctx, string $class, mixed $where, mixed ...$args): object
+    public function find(Context $ctx, string $class): Finder
     {
-        throw new LogicException('Not Implemented');
-    }
+        $query = new FindClass($this->connection, $this->tracker, $class);
 
-    /**
-     * @throws EngineError
-     */
-    public function findFirst(Context $ctx, string $class, mixed $where, mixed ...$args): object
-    {
-        throw new LogicException('Not Implemented');
-    }
+        try {
+            $finder = $this->mapper->toPHPValue($ctx, $query);
+        } catch (Mapper\ConversionError $e) {
+            throw new EngineError(sprintf('Error while mapping finder for class %s', $class), 0, $e);
+        }
 
-    /**
-     * Finds many objects.
-     *
-     * @throws EngineError
-     */
-    public function findMany(Context $ctx, string $class, mixed $where, mixed ...$args): iterable
-    {
-        throw new LogicException('Not Implemented');
+        if (!$finder instanceof Finder) {
+            throw new EngineError(sprintf('Returned mapped value is not an instance of %s', Finder::class));
+        }
+
+        return $finder;
     }
 
     /**
@@ -104,14 +98,14 @@ class Engine
         $isTracked = $this->tracker->isTracked($entity);
 
         if ($isTracked) {
-            $cmd = $this->toCommand($ctx, $entity, EntityMapper::CMD_UPDATE);
+            $query = $this->toStatement($ctx, $entity, EntityMapper::QUERY_UPDATE);
         } else {
-            $cmd = $this->toCommand($ctx, $entity, EntityMapper::CMD_INSERT);
+            $query = $this->toStatement($ctx, $entity, EntityMapper::QUERY_INSERT);
         }
 
         try {
-            $result = $this->operator->execute($ctx, $cmd);
-        } catch (Operator\ExecutionError $e) {
+            $result = $this->connection->execute($ctx, $query);
+        } catch (Connection\ExecutionError $e) {
             throw new EngineError('Error while persisting', 0, $e);
         }
 
@@ -145,11 +139,11 @@ class Engine
             throw new EngineError('Cannot delete an untracked object.');
         }
 
-        $cmd = $this->toCommand($ctx, $entity, EntityMapper::CMD_DELETE);
+        $query = $this->toStatement($ctx, $entity, EntityMapper::QUERY_DELETE);
 
         try {
-            $this->operator->execute($ctx, $cmd);
-        } catch (Operator\ExecutionError $e) {
+            $this->connection->execute($ctx, $query);
+        } catch (Connection\ExecutionError $e) {
             throw new EngineError('Error while deleting', 0, $e);
         }
 
@@ -159,11 +153,11 @@ class Engine
     /**
      * @throws EngineError
      */
-    private function toCommand(Context $ctx, object $entity, int $operation): object
+    private function toStatement(Context $ctx, object $entity, int $operation): Statement
     {
         $class = get_class($entity);
 
-        $ctx = Context\withValue($ctx, EntityMapper::CTX_CMD, $operation);
+        $ctx = Context\withValue($ctx, EntityMapper::CTX_QUERY, $operation);
 
         try {
             $mapped = $this->mapper->toDatabaseValue($ctx, $entity);
@@ -171,15 +165,10 @@ class Engine
             throw new EngineError(sprintf('Error while mapping %s', $class), 0, $e);
         }
 
-        if (!is_object($mapped)) {
-            throw new EngineError(sprintf('Mapped value from %s is not an object', $class));
+        if (!$mapped instanceof Statement) {
+            throw new EngineError(sprintf('Mapped value from %s is not an statement', $class));
         }
 
         return $mapped;
-    }
-
-    private function toObject(Context $ctx, array $row): object
-    {
-        throw new LogicException('Not implemented');
     }
 }

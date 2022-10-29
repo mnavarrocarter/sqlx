@@ -16,19 +16,21 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @internal
  *
- * @coversNothing
+ * @covers \MNC\SQLX\SQL\Query\Parts\Values
+ * @covers \MNC\SQLX\SQL\Query\Parts\Where
+ * @covers \MNC\SQLX\SQL\Query\Update
  */
 class UpdateTest extends TestCase
 {
     public function testRawWhere(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
 
         $query = Update::table('users')
             ->andWhere('account_id = ?', 22)
@@ -37,8 +39,8 @@ class UpdateTest extends TestCase
             ])
         ;
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('UPDATE users SET disabled = ? WHERE account_id = ?;', $sql);
         $this->assertCount(2, $params);
@@ -47,7 +49,7 @@ class UpdateTest extends TestCase
 
     public function testAndRaw(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
 
         $query = Update::table('users')
             ->andWhere('account_id = ?', 22)
@@ -58,8 +60,8 @@ class UpdateTest extends TestCase
             ])
         ;
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('UPDATE users SET disabled = ?, login_attempts = ? WHERE account_id = ? AND login_attempts > ?;', $sql);
         $this->assertCount(4, $params);

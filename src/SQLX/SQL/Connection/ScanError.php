@@ -14,17 +14,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator\Cmd;
+namespace MNC\SQLX\SQL\Connection;
 
-class Update extends Table
+use Exception;
+
+class ScanError extends Exception
 {
-    /**
-     * @var array<string,mixed>
-     */
-    public array $where = [];
-
-    /**
-     * @var array<string,mixed>
-     */
-    public array $values = [];
 }

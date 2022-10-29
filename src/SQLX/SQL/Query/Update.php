@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Statement;
 
 final class Update implements Statement
@@ -57,17 +57,17 @@ final class Update implements Statement
         return $this;
     }
 
-    public function getSQL(Driver $driver): string
+    public function getSQL(Dialect $driver): string
     {
         return sprintf(
             'UPDATE %s %s %s;',
-            $this->table,
+            $driver->quoteTable($this->table),
             $this->getSQLForSet($driver),
             $this->getWhereSQL($driver)
         );
     }
 
-    public function getParameters(Driver $driver): array
+    public function getParameters(Dialect $driver): array
     {
         return array_merge(
             $this->getValueParameters($driver),

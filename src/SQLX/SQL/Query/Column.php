@@ -17,31 +17,30 @@ declare(strict_types=1);
 namespace MNC\SQLX\SQL\Query;
 
 use MNC\SQLX\SQL\Dialect;
-use MNC\SQLX\SQL\Statement;
 
-final class Raw implements Clause, Statement
+final class Column implements Clause
 {
-    private string $raw;
-    private array $params;
+    private string $name;
+    private string $as;
 
-    public function __construct(string $raw, array $params = [])
+    public function __construct(string $name, string $as)
     {
-        $this->raw = $raw;
-        $this->params = $params;
-    }
-
-    public static function query(string $sql, mixed ...$args): Raw
-    {
-        return new self($sql, $args);
+        $this->name = $name;
+        $this->as = $as;
     }
 
     public function getSQL(Dialect $driver): string
     {
-        return $this->raw;
+        $col = $driver->quoteColumn($this->name);
+        if ('' !== $this->as) {
+            $col .= ' AS '.$this->as;
+        }
+
+        return $col;
     }
 
     public function getParameters(Dialect $driver): array
     {
-        return $this->params;
+        return [];
     }
 }

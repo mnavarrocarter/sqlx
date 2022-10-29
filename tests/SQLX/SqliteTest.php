@@ -17,6 +17,11 @@ declare(strict_types=1);
 namespace MNC\SQLX;
 
 use Castor\Context;
+use DateTimeImmutable;
+use MNC\SQLX\Engine\Finder\FinderError;
+use MNC\SQLX\Engine\Finder\NotFoundError;
+use MNC\SQLX\SQL\Connection\ScanError;
+use MNC\SQLX\SQL\Query\Comp;
 use MNC\SQLX\SQL\Query\FromFile;
 
 /**
@@ -149,6 +154,81 @@ class SqliteTest extends FunctionalTestCase
         $engine->delete($ctx, $user);
 
         $this->assertRecordNotExists('user', 'id', 1);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws NotFoundError
+     */
+    public function testInsertAndFindWithRawClause(): void
+    {
+        $engine = Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+
+        $ctx = Context\nil();
+
+        $user = new User('John Doe', 'jdoe@example.com', 'secret');
+
+        $engine->persist($ctx, $user);
+
+        $user = $engine->find($ctx, User::class)->andWhere('id = ?', 1)->first();
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
+        $this->assertSame(1, $user->getId());
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws NotFoundError
+     */
+    public function testInsertAndFindWithClause(): void
+    {
+        $engine = Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+
+        $ctx = Context\nil();
+
+        $user = new User('John Doe', 'jdoe@example.com', 'secret');
+
+        $engine->persist($ctx, $user);
+
+        $user = $engine
+            ->find($ctx, User::class)
+            ->andWhere(Comp::notNull('createdAt'))
+            ->first()
+        ;
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
+        $this->assertSame(1, $user->getId());
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws ScanError
+     */
+    public function testFindsOneNotFound(): void
+    {
+        $engine = Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+
+        $ctx = Context\nil();
+
+        $data = $engine->find($ctx, User::class)
+            ->andWhere(Comp::lt('createdAt', new DateTimeImmutable()))
+            ->slice(0, 10)->rows()->toArray();
+
+        $this->assertCount(0, $data);
     }
 
     protected function getSetupStatements(): iterable

@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Statement;
 
 class Insert implements Statement
@@ -47,16 +47,16 @@ class Insert implements Statement
         return $this;
     }
 
-    public function getSQL(Driver $driver): string
+    public function getSQL(Dialect $driver): string
     {
         return sprintf(
             'INSERT INTO %s %s;',
-            $this->table,
+            $driver->quoteTable($this->table),
             $this->getSQLForValues($driver)
         );
     }
 
-    public function getParameters(Driver $driver): array
+    public function getParameters(Dialect $driver): array
     {
         return $this->getValueParameters($driver);
     }

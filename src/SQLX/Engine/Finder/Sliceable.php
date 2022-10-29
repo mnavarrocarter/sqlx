@@ -14,10 +14,12 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator;
+namespace MNC\SQLX\Engine\Finder;
 
-use Exception;
-
-class ExecutionError extends Exception
+interface Sliceable
 {
+    /**
+     * Slices the result set according to the offset and length.
+     */
+    public function slice(int $offset, int $length = 0): Sliceable;
 }

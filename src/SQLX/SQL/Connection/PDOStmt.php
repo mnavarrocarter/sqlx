@@ -16,14 +16,17 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Connection;
 
+use Generator;
+use IteratorAggregate;
 use PDO;
+use PDOStatement;
 
-final class PDOStmt implements Result, Rows
+final class PDOStmt implements Result, Rows, IteratorAggregate
 {
     private PDO $pdo;
-    private \PDOStatement $stmt;
+    private PDOStatement $stmt;
 
-    public function __construct(PDO $pdo, \PDOStatement $stmt)
+    public function __construct(PDO $pdo, PDOStatement $stmt)
     {
         $this->pdo = $pdo;
         $this->stmt = $stmt;
@@ -41,7 +44,12 @@ final class PDOStmt implements Result, Rows
 
     public function scanAssoc(array &$value): void
     {
-        $value = $this->stmt->fetch(PDO::FETCH_ASSOC);
+        $tmp = $this->stmt->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($tmp)) {
+            $tmp = [];
+        }
+
+        $value = $tmp;
     }
 
     public function scan(mixed &...$values): void
@@ -54,6 +62,18 @@ final class PDOStmt implements Result, Rows
 
     public function toArray(): array
     {
-        return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
+        return iterator_to_array($this);
+    }
+
+    public function getIterator(): Generator
+    {
+        while (true) {
+            $assoc = $this->stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($assoc)) {
+                break;
+            }
+
+            yield $assoc;
+        }
     }
 }

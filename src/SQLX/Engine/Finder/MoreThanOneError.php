@@ -14,14 +14,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Mapper;
+namespace MNC\SQLX\Engine\Finder;
 
-class Classname
+use Exception;
+
+class MoreThanOneError extends Exception
 {
-    public string $name;
-
-    public function __construct(string $name)
-    {
-        $this->name = $name;
-    }
 }

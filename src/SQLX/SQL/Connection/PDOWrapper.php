@@ -19,7 +19,7 @@ namespace MNC\SQLX\SQL\Connection;
 use Castor\Context;
 use LogicException;
 use MNC\SQLX\SQL\Connection;
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Statement;
 use PDO;
 use PDOException;
@@ -27,7 +27,7 @@ use PDOException;
 /**
  * PDOWrapper is both a connection and a driver for databases in PHP.
  */
-final class PDOWrapper implements Connection, Driver
+final class PDOWrapper implements Connection, DialectAware, Dialect
 {
     private PDO $pdo;
 
@@ -66,14 +66,36 @@ final class PDOWrapper implements Connection, Driver
      */
     final public function doExecute(Context $ctx, Statement $statement): PDOStmt
     {
-        $stmt = $this->pdo->prepare($statement->getSQL($this));
+        $dialect = $ctx->value(Dialect::KEY) ?? $this->getDialect();
+
+        $stmt = $this->pdo->prepare($statement->getSQL($dialect));
 
         try {
-            $stmt->execute($statement->getParameters($this));
+            $stmt->execute($statement->getParameters($dialect));
         } catch (PDOException $e) {
             throw new ExecutionError('Error while executing statement', 0, $e);
         }
 
         return new PDOStmt($this->pdo, $stmt);
+    }
+
+    public function getDialect(): Dialect
+    {
+        return $this;
+    }
+
+    public function quoteTable(string $table): string
+    {
+        return $table;
+    }
+
+    public function quoteColumn(string $column): string
+    {
+        return $column;
+    }
+
+    public function cleanValue(mixed $value): mixed
+    {
+        return $value;
     }
 }

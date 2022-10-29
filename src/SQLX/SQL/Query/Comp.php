@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 
 /**
  * Comp represents a comparison statement.
@@ -34,9 +34,9 @@ final class Comp implements Clause
     private const BETWEEN = 'BETWEEN';
     private const IN = 'IN';
 
-    private string $operator;
-    private string $column;
-    private array $params;
+    public string $operator;
+    public string $column;
+    public array $params;
 
     private function __construct(string $operator, string $column, mixed ...$params)
     {
@@ -95,7 +95,7 @@ final class Comp implements Clause
         return new Comp(self::IN, $column, ...$values);
     }
 
-    public function getSQL(Driver $driver): string
+    public function getSQL(Dialect $driver): string
     {
         return match ($this->operator) {
             self::EQ,
@@ -103,19 +103,35 @@ final class Comp implements Clause
             self::GT,
             self::GTE,
             self::LT,
-            self::LTE => sprintf('%s %s ?', $this->column, $this->operator),
+            self::LTE => sprintf(
+                '%s %s ?',
+                $driver->quoteColumn($this->column),
+                $this->operator
+            ),
 
             self::NULL,
-            self::NOT_NULL => sprintf('%s %s', $this->column, $this->operator),
+            self::NOT_NULL => sprintf(
+                '%s %s',
+                $driver->quoteColumn($this->column),
+                $this->operator
+            ),
 
-            self::BETWEEN => sprintf('%s %s ? AND ?', $this->column, $this->operator),
+            self::BETWEEN => sprintf(
+                '%s %s ? AND ?',
+                $driver->quoteColumn($this->column),
+                $this->operator
+            ),
 
-            self::IN => sprintf('%s IN (%s)', $this->column, implode(', ', array_fill(0, count($this->params), '?')))
+            self::IN => sprintf(
+                '%s IN (%s)',
+                $this->column,
+                implode(', ', array_fill(0, count($this->params), '?'))
+            )
         };
     }
 
-    public function getParameters(Driver $driver): array
+    public function getParameters(Dialect $driver): array
     {
-        return $this->params;
+        return array_map([$driver, 'cleanValue'], $this->params);
     }
 }

@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,7 +29,7 @@ class InsertTest extends TestCase
 {
     public function testSingleSetOfValues(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
 
         $query = Insert::into('users')->values([
             'id' => '77fdf658-5fd9-419f-a6ca-e960cd9c8daa',
@@ -38,8 +38,8 @@ class InsertTest extends TestCase
             'password' => 'secret',
         ]);
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('INSERT INTO users (id, name, username, password) VALUES (?, ?, ?, ?);', $sql);
         $this->assertCount(4, $params);
@@ -48,7 +48,7 @@ class InsertTest extends TestCase
 
     public function testMultipleValues(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
 
         $query = Insert::into('users')
             ->values([
@@ -65,8 +65,8 @@ class InsertTest extends TestCase
             ])
         ;
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('INSERT INTO users (id, name, username, password) VALUES (?, ?, ?, ?), (?, ?, ?, ?);', $sql);
         $this->assertCount(8, $params);

@@ -24,14 +24,24 @@ final class InMemory implements Metadata
     private string $className;
 
     /**
-     * @var Field[]
-     */
-    private array $fields;
-
-    /**
      * @var callable():object
      */
     private $instanceFactory;
+
+    /**
+     * @var Field[]
+     */
+    private array $fields = [];
+
+    /**
+     * @var array<string,int>
+     */
+    private array $propIndex = [];
+
+    /**
+     * @var array<string,int>
+     */
+    private array $colIndex = [];
 
     public function __construct(
         string $className,
@@ -45,7 +55,9 @@ final class InMemory implements Metadata
 
     public function addField(Field $field): void
     {
-        $this->fields[] = $field;
+        $count = array_push($this->fields, $field);
+        $this->propIndex[$field->name] = $count - 1;
+        $this->colIndex[$field->column] = $count - 1;
     }
 
     public function getClassName(): string
@@ -56,6 +68,16 @@ final class InMemory implements Metadata
     public function getTableName(): string
     {
         return $this->tableName;
+    }
+
+    public function getFieldByProp(string $name): ?Field
+    {
+        return $this->fields[$this->propIndex[$name] ?? -1] ?? null;
+    }
+
+    public function getFieldByColumn(string $name): ?Field
+    {
+        return $this->fields[$this->colIndex[$name] ?? -1] ?? null;
     }
 
     public function getFields(): array

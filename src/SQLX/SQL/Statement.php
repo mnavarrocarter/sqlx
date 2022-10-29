@@ -18,7 +18,7 @@ namespace MNC\SQLX\SQL;
 
 interface Statement
 {
-    public function getSQL(Driver $driver): string;
+    public function getSQL(Dialect $driver): string;
 
-    public function getParameters(Driver $driver): array;
+    public function getParameters(Dialect $driver): array;
 }

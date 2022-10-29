@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query\Parts;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Query\AndN;
 use MNC\SQLX\SQL\Query\Clause;
 use MNC\SQLX\SQL\Query\OrN;
@@ -59,8 +59,12 @@ trait Where
         $this->where[] = new OrN($clause);
     }
 
-    private function getWhereSQL(Driver $driver): string
+    private function getWhereSQL(Dialect $driver): string
     {
+        if ([] === $this->where) {
+            return '';
+        }
+
         $where = [];
         foreach ($this->where as $clause) {
             $part = $clause->getSQL($driver);
@@ -80,7 +84,7 @@ trait Where
         return 'WHERE '.implode(' ', $where);
     }
 
-    private function getWhereParameters(Driver $driver): array
+    private function getWhereParameters(Dialect $driver): array
     {
         $params = [];
         foreach ($this->where as $clause) {

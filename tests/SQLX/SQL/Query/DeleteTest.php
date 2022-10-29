@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,11 +29,11 @@ class DeleteTest extends TestCase
 {
     public function testRawClause(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
         $query = Delete::from('users')->andWhere('id = ?', 21);
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('DELETE FROM users WHERE id = ?;', $sql);
         $this->assertCount(1, $params);
@@ -42,7 +42,7 @@ class DeleteTest extends TestCase
 
     public function testComplexCause(): void
     {
-        $driver = $this->createStub(Driver::class);
+        $dialect = new Dialect\Noop();
         $query = Delete::from('users')
             ->andWhere(new AndN(
                 Comp::in('account_id', 1, 2, 3, 4, 5),
@@ -51,8 +51,8 @@ class DeleteTest extends TestCase
             ))
         ;
 
-        $sql = $query->getSQL($driver);
-        $params = $query->getParameters($driver);
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
 
         $this->assertSame('DELETE FROM users WHERE account_id IN (?, ?, ?, ?, ?) AND active = ? AND created_at > ?;', $sql);
         $this->assertCount(7, $params);

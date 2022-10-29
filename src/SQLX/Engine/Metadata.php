@@ -29,5 +29,9 @@ interface Metadata
      */
     public function getFields(): array;
 
+    public function getFieldByProp(string $name): ?Field;
+
+    public function getFieldByColumn(string $name): ?Field;
+
     public function newInstance(): object;
 }

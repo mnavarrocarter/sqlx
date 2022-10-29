@@ -14,8 +14,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL;
+namespace MNC\SQLX\Engine\Finder;
 
-interface Driver
+use Exception;
+
+class NotFoundError extends Exception
 {
 }

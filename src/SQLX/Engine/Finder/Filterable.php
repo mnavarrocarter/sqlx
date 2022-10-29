@@ -14,12 +14,19 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator\Cmd;
+namespace MNC\SQLX\Engine\Finder;
 
-class Insert extends Table
+use MNC\SQLX\SQL\Query\Clause;
+
+interface Filterable
 {
     /**
-     * @var array<string,mixed>
+     * Adds a where clause with an AND if necessary.
      */
-    public array $values = [];
+    public function andWhere(Clause|string $clause, mixed ...$args): Filterable;
+
+    /**
+     * Adds a where clause with an OR if necessary.
+     */
+    public function orWhere(Clause|string $clause, mixed ...$args): Filterable;
 }

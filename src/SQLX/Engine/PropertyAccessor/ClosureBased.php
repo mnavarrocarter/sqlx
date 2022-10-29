@@ -73,7 +73,9 @@ final class ClosureBased implements PropertyAccessor
      */
     public function set(string $scope, string $property, mixed $value): void
     {
-        $this->ensureProperty($scope, $property);
+        // Had to remove this check because it fails for properties of parent classes
+        // created with no constructor using reflection
+        // $this->ensureProperty($scope, $property);
         $this->getSetter($scope)($this->object->get(), $property, $value);
     }
 
@@ -130,7 +132,7 @@ final class ClosureBased implements PropertyAccessor
     private function ensureProperty(string $scope, string $property): void
     {
         if (!$this->has($scope, $property)) {
-            throw new NonexistentProperty(sprintf('No property "%d" in scope "%s"', $property, $scope));
+            throw new NonexistentProperty(sprintf('No property "%s" in scope "%s"', $property, $scope));
         }
     }
 

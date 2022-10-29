@@ -14,13 +14,23 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Query;
+namespace MNC\SQLX\Engine\Mapper;
 
-use MNC\SQLX\SQL\Dialect;
-
-interface Clause
+class RawRecord
 {
-    public function getSQL(Dialect $driver): string;
+    public string $table;
 
-    public function getParameters(Dialect $driver): array;
+    /**
+     * @var array<string,mixed>
+     */
+    public array $data;
+
+    /**
+     * @param array<string,mixed> $data
+     */
+    public function __construct(string $table, array $data = [])
+    {
+        $this->table = $table;
+        $this->data = $data;
+    }
 }

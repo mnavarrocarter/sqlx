@@ -17,21 +17,29 @@ declare(strict_types=1);
 namespace MNC\SQLX\Engine;
 
 use Castor\Context;
-use LogicException;
-use MNC\SQLX\Engine\Mapper\Classname;
+use MNC\SQLX\Engine\Finder\ForEntities;
+use MNC\SQLX\Engine\Mapper\FindClass;
 use MNC\SQLX\Engine\Mapper\IdUpdater;
 use MNC\SQLX\Engine\Mapper\LastId;
+use MNC\SQLX\Engine\Mapper\RawRecord;
 use MNC\SQLX\Engine\Metadata\Field;
-use MNC\SQLX\Engine\Operator\Cmd;
 use MNC\SQLX\SQL\Mapper;
 use MNC\SQLX\SQL\Mapper\ConversionError;
+use MNC\SQLX\SQL\Query\Comp;
+use MNC\SQLX\SQL\Query\Delete;
+use MNC\SQLX\SQL\Query\Insert;
+use MNC\SQLX\SQL\Query\Select;
+use MNC\SQLX\SQL\Query\Update;
 
+/**
+ * The EntityMapper is responsible for mapping an entity into.
+ */
 final class EntityMapper extends Mapper\Middleware
 {
-    public const CTX_CMD = 'sqlx.cmd';
-    public const CMD_INSERT = 0;
-    public const CMD_UPDATE = 1;
-    public const CMD_DELETE = 2;
+    public const CTX_QUERY = 'sqlx.query';
+    public const QUERY_INSERT = 0;
+    public const QUERY_UPDATE = 1;
+    public const QUERY_DELETE = 2;
 
     private Metadata\Store $metadata;
     private PropertyAccessor\Store $accessor;
@@ -52,11 +60,25 @@ final class EntityMapper extends Mapper\Middleware
             return new IdUpdater($this->metadata, $this->accessor, $next, $value);
         }
 
-        if (!$value instanceof Classname) {
-            return $next->toPHPValue($ctx, $value);
+        if ($value instanceof FindClass) {
+            try {
+                $metadata = $this->metadata->retrieve($value->classname);
+            } catch (Metadata\Invalid|Metadata\NotFound $e) {
+                throw new ConversionError('Metadata error', 0, $e);
+            }
+
+            return new ForEntities(
+                $ctx,
+                Select::all()->from($metadata->getTableName()),
+                $value->connection,
+                $metadata,
+                $this,
+                $value->tracker,
+                $this->accessor,
+            );
         }
 
-        throw new LogicException('Not Implemented');
+        return $next->toPHPValue($ctx, $value);
     }
 
     /**
@@ -81,74 +103,115 @@ final class EntityMapper extends Mapper\Middleware
             return $next->toDatabaseValue($ctx, $value);
         }
 
-        return $this->toCommand($ctx, $metadata, $next, $value);
+        $operation = (int) ($ctx->value(self::CTX_QUERY) ?? -1);
+
+        $accessor = $this->accessor->create($value);
+
+        return match ($operation) {
+            self::QUERY_INSERT => $this->buildInsert($ctx, $accessor, $metadata, $next),
+            self::QUERY_UPDATE => $this->buildUpdate($ctx, $accessor, $metadata, $next),
+            self::QUERY_DELETE => $this->buildDelete($ctx, $accessor, $metadata, $next),
+            default => new RawRecord($metadata->getTableName()),
+        };
+    }
+
+    /**
+     * @param object $object
+     *
+     * @throws ConversionError
+     */
+    private function buildInsert(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Insert
+    {
+        $insert = Insert::into($metadata->getTableName());
+
+        $values = [];
+        foreach ($metadata->getFields() as $field) {
+            if ($field->isAutoincrement()) {
+                continue;
+            }
+
+            $values[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+        }
+
+        return $insert->values($values);
+    }
+
+    /**
+     * @param object $object
+     *
+     * @throws ConversionError
+     */
+    private function buildUpdate(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Update
+    {
+        $update = Update::table($metadata->getTableName());
+
+        $set = [];
+        foreach ($metadata->getFields() as $field) {
+            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+
+            if ($field->isId()) {
+                $update->andWhere(Comp::eq($field->column, $value));
+
+                continue;
+            }
+
+            $set[$field->column] = $value;
+        }
+
+        return $update->set($set);
+    }
+
+    /**
+     * @param object $object
+     *
+     * @throws ConversionError
+     */
+    private function buildDelete(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Delete
+    {
+        $delete = Delete::from($metadata->getTableName());
+
+        foreach ($metadata->getFields() as $field) {
+            if (!$field->isId()) {
+                continue;
+            }
+
+            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+
+            $delete->andWhere(Comp::eq($field->column, $value));
+        }
+
+        return $delete;
     }
 
     /**
      * @throws ConversionError
      */
-    private function toCommand(Context $ctx, Metadata $metadata, Mapper $next, object $object): object
+    private function buildRawRecord(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): RawRecord
     {
-        $operation = (int) ($ctx->value(self::CTX_CMD) ?? -1);
-
-        $cmd = match ($operation) {
-            self::CMD_INSERT => new Cmd\Insert(),
-            self::CMD_UPDATE => new Cmd\Update(),
-            self::CMD_DELETE => new Cmd\Delete(),
-            default => new Cmd\Record(),
-        };
-
-        $cmd->table = $metadata->getTableName();
-
-        $accessor = $this->accessor->create($object);
+        $record = new RawRecord($metadata->getTableName());
 
         foreach ($metadata->getFields() as $field) {
-            // We don't process non-id fields for deletes
-            if ($cmd instanceof Cmd\Delete && !$field->isId()) {
-                continue;
-            }
-
-            // We don't process autoincrement fields for inserts
-            if ($cmd instanceof Cmd\Insert && $field->isAutoincrement()) {
-                continue;
-            }
-
-            try {
-                $value = $accessor->get($field->meta[Field::META_SCOPE] ?? get_class($object), $field->name);
-                $value = $next->toDatabaseValue($ctx, $value);
-            } catch (Mapper\ConversionError|PropertyAccessor\NonexistentProperty $e) {
-                throw new Mapper\ConversionError(sprintf(
-                    'Error while mapping property "%s" of class "%s"',
-                    $field->name,
-                    $metadata->getClassName()
-                ), 0, $e);
-            }
-
-            if ($cmd instanceof Cmd\Record) {
-                $cmd->values[$field->column] = $value;
-
-                continue;
-            }
-
-            if ($cmd instanceof Cmd\Insert) {
-                $cmd->values[$field->column] = $value;
-
-                continue;
-            }
-
-            if ($cmd instanceof Cmd\Delete) {
-                $cmd->where[$field->column] = $value;
-
-                continue;
-            }
-
-            if ($field->isId()) {
-                $cmd->where[$field->column] = $value;
-            }
-
-            $cmd->values[$field->column] = $value;
+            $record->data[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
         }
 
-        return $cmd;
+        return $record;
+    }
+
+    /**
+     * @throws ConversionError
+     */
+    private function mapFieldToDatabase(Context $ctx, PropertyAccessor $accessor, Field $field, Mapper $next, string $class): mixed
+    {
+        try {
+            $value = $accessor->get($field->meta[Field::META_SCOPE] ?? $class, $field->name);
+
+            return $next->toDatabaseValue($ctx, $value);
+        } catch (Mapper\ConversionError|PropertyAccessor\NonexistentProperty $e) {
+            throw new Mapper\ConversionError(sprintf(
+                'Error while mapping property "%s" of class "%s"',
+                $field->name,
+                $class
+            ), 0, $e);
+        }
     }
 }

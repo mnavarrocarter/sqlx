@@ -14,12 +14,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Operator\Cmd;
+namespace MNC\SQLX\SQL;
 
-class Delete extends Table
+interface Dialect
 {
-    /**
-     * @var array<string,mixed>
-     */
-    public array $where = [];
+    public const KEY = 'sqlx.dialect';
+
+    public function quoteTable(string $table): string;
+
+    public function quoteColumn(string $column): string;
+
+    public function cleanValue(mixed $value): mixed;
 }

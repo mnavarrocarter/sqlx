@@ -14,13 +14,11 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Query;
+namespace MNC\SQLX\SQL\Connection;
 
 use MNC\SQLX\SQL\Dialect;
 
-interface Clause
+interface DialectAware
 {
-    public function getSQL(Dialect $driver): string;
-
-    public function getParameters(Dialect $driver): array;
+    public function getDialect(): Dialect;
 }

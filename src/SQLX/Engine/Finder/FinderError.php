@@ -14,13 +14,10 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Query;
+namespace MNC\SQLX\Engine\Finder;
 
-use MNC\SQLX\SQL\Dialect;
+use Exception;
 
-interface Clause
+class FinderError extends Exception
 {
-    public function getSQL(Dialect $driver): string;
-
-    public function getParameters(Dialect $driver): array;
 }

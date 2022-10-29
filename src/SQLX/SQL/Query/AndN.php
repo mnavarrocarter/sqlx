@@ -16,21 +16,21 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 
 final class AndN implements Clause
 {
     /**
      * @var Clause[]
      */
-    private array $clauses;
+    public array $clauses;
 
     public function __construct(Clause ...$clauses)
     {
         $this->clauses = $clauses;
     }
 
-    public function getSQL(Driver $driver): string
+    public function getSQL(Dialect $driver): string
     {
         $and = [];
         foreach ($this->clauses as $clause) {
@@ -50,7 +50,7 @@ final class AndN implements Clause
         return $sql;
     }
 
-    public function getParameters(Driver $driver): array
+    public function getParameters(Dialect $driver): array
     {
         $params = [];
         foreach ($this->clauses as $clause) {

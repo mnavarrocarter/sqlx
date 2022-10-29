@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query\Parts;
 
-use MNC\SQLX\SQL\Driver;
+use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Query\InvalidQuery;
 
 trait Values
@@ -53,9 +53,9 @@ trait Values
         $this->values = [array_values($set)];
     }
 
-    private function getSQLForValues(Driver $driver): string
+    private function getSQLForValues(Dialect $driver): string
     {
-        $cols = implode(', ', $this->columns);
+        $cols = implode(', ', array_map([$driver, 'quoteColumn'], $this->columns));
 
         $values = [];
         foreach ($this->values as $params) {
@@ -65,12 +65,12 @@ trait Values
         return sprintf('(%s) VALUES %s', $cols, implode(', ', $values));
     }
 
-    private function getValueParameters(Driver $driver): array
+    private function getValueParameters(Dialect $driver): array
     {
-        return array_merge(...$this->values);
+        return array_map([$driver, 'cleanValue'], array_merge(...$this->values));
     }
 
-    private function getSQLForSet(Driver $driver): string
+    private function getSQLForSet(Dialect $driver): string
     {
         if ([] === $this->values) {
             return '';
@@ -79,7 +79,7 @@ trait Values
         $sets = [];
 
         foreach ($this->columns as $column) {
-            $sets[] = $column.' = ?';
+            $sets[] = $driver->quoteColumn($column).' = ?';
         }
 
         return sprintf('SET %s', implode(', ', $sets));
