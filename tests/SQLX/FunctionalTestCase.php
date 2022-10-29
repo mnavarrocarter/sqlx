@@ -18,7 +18,9 @@ namespace MNC\SQLX;
 
 use Castor\Context;
 use MNC\SQLX\SQL\Connection;
+use MNC\SQLX\SQL\Connection\ExecutionError;
 use MNC\SQLX\SQL\Connection\PDOWrapper;
+use MNC\SQLX\SQL\Query\Raw;
 use MNC\SQLX\SQL\Statement;
 use PDO;
 use PHPUnit\Framework\TestCase;
@@ -88,5 +90,28 @@ abstract class FunctionalTestCase extends TestCase
         }
 
         return $this->conn;
+    }
+
+    /**
+     * @param mixed $id
+     */
+    protected function assertRecordContains(string $table, string $id, mixed $v, array $data): void
+    {
+        $conn = $this->getConnection();
+        $query = Raw::query(sprintf('SELECT * FROM %s WHERE %s = ?', $table, $id), $v);
+
+        try {
+            $rows = $conn->query(Context\nil(), $query);
+        } catch (ExecutionError $e) {
+            $this->fail('Failed to execute assertion: '.$e->getMessage());
+        }
+
+        $row = [];
+        $rows->scan($row);
+
+        foreach ($data as $key => $datum) {
+            $this->assertArrayHasKey($key, $row, sprintf('Column %s does not exist in result', $key));
+            $this->assertSame($row[$key], $datum, sprintf('Value of column %s is not the expected', $key));
+        }
     }
 }

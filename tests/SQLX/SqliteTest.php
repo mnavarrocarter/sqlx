@@ -50,7 +50,7 @@ class SqliteTest extends FunctionalTestCase
     /**
      * @throws EngineError
      */
-    public function testInsertion(): void
+    public function testItInsertsNormally(): void
     {
         $engine = Engine::configure($this->getConnection())
             ->withNamer(new Engine\Namer\Underscore())
@@ -59,11 +59,42 @@ class SqliteTest extends FunctionalTestCase
 
         $ctx = Context\nil();
 
-        $user = new User('Matias Navarro', 'mnavarrocarter@gmail.com', 'secret');
+        $user = new User('John Doe', 'jdoe@example.com', 'secret');
 
         $engine->persist($ctx, $user);
 
         $this->assertSame(1, $user->getId());
+
+        $this->assertRecordContains('user', 'id', 1, [
+            'name' => 'John Doe',
+            'email' => 'jdoe@example.com',
+            'password' => 'secret',
+        ]);
+    }
+
+    /**
+     * @throws EngineError
+     */
+    public function testItInsertsStringWithQuote(): void
+    {
+        $engine = Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+
+        $ctx = Context\nil();
+
+        $user = new User("Bernardo O'Higgins", 'bohigg@example.com', 'secret');
+
+        $engine->persist($ctx, $user);
+
+        $this->assertSame(1, $user->getId());
+
+        $this->assertRecordContains('user', 'id', 1, [
+            'name' => "Bernardo O'Higgins",
+            'email' => 'bohigg@example.com',
+            'password' => 'secret',
+        ]);
     }
 
     /**
@@ -78,13 +109,23 @@ class SqliteTest extends FunctionalTestCase
 
         $ctx = Context\nil();
 
-        $user = new User('Matias Navarro', 'mnavarrocarter@gmail.com', 'secret');
+        $user = new User('John Doe', 'jdoe@example.com', 'secret');
 
         $engine->persist($ctx, $user);
+
         $this->assertSame(1, $user->getId());
+        $this->assertRecordContains('user', 'id', 1, [
+            'name' => 'John Doe',
+            'email' => 'jdoe@example.com',
+            'password' => 'secret',
+        ]);
 
         $user->changePassword('secret2');
         $engine->persist($ctx, $user);
+
+        $this->assertRecordContains('user', 'id', 1, [
+            'password' => 'secret2',
+        ]);
     }
 
     protected function getSetupStatements(): iterable

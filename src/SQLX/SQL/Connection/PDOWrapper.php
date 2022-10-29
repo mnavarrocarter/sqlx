@@ -27,7 +27,7 @@ use PDOException;
 /**
  * PDOWrapper is both a connection and a driver for databases in PHP.
  */
-class PDOWrapper implements Connection, Driver
+final class PDOWrapper implements Connection, Driver
 {
     private PDO $pdo;
 
@@ -53,6 +53,19 @@ class PDOWrapper implements Connection, Driver
      */
     public function execute(Context $ctx, Statement $statement): Result
     {
+        return $this->doExecute($ctx, $statement);
+    }
+
+    public function query(Context $ctx, Statement $statement): Rows
+    {
+        return $this->doExecute($ctx, $statement);
+    }
+
+    /**
+     * @throws ExecutionError
+     */
+    final public function doExecute(Context $ctx, Statement $statement): PDOStmt
+    {
         $stmt = $this->pdo->prepare($statement->getSQL($this));
 
         try {
@@ -61,11 +74,6 @@ class PDOWrapper implements Connection, Driver
             throw new ExecutionError('Error while executing statement', 0, $e);
         }
 
-        return new PDOResult($this->pdo, $stmt);
-    }
-
-    public function query(Context $ctx, Statement $statement): Rows
-    {
-        throw new LogicException('Not Implemented');
+        return new PDOStmt($this->pdo, $stmt);
     }
 }

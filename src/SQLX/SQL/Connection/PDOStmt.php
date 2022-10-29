@@ -16,12 +16,14 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Connection;
 
-class PDOResult implements Result
+use PDO;
+
+final class PDOStmt implements Result, Rows
 {
-    private \PDO $pdo;
+    private PDO $pdo;
     private \PDOStatement $stmt;
 
-    public function __construct(\PDO $pdo, \PDOStatement $stmt)
+    public function __construct(PDO $pdo, \PDOStatement $stmt)
     {
         $this->pdo = $pdo;
         $this->stmt = $stmt;
@@ -35,5 +37,15 @@ class PDOResult implements Result
     public function getLastInsertedId(): string
     {
         return (string) $this->pdo->lastInsertId();
+    }
+
+    public function scan(mixed &$value): void
+    {
+        $value = $this->stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function toArray(): array
+    {
+        return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
