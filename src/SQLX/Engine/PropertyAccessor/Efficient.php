@@ -34,11 +34,32 @@ final class Efficient implements PropertyAccessor
     {
         $this->ensureProperty($object, $property);
 
-        array_walk($object, static function (&$inner, $key) use ($property, $value) {
+        $set = false;
+        array_walk($object, static function (&$inner, $key) use ($property, $value, &$set) {
             if (str_ends_with($key, $property)) {
                 $inner = $value;
+                $set = true;
             }
         });
+
+        if ($set) {
+            return;
+        }
+
+        // If `ensureProperty` returned true but `array_walk` failed to insert the property,
+        // is because we are dealing with an uninitialized property. We have to resort
+        // to reflection to do this.
+        $class = new \ReflectionClass($object);
+
+        try {
+            $prop = $class->getProperty($property);
+        } catch (\ReflectionException $e) {
+            throw new NonexistentProperty('Unexpected reflection error', 0, $e);
+        }
+
+        $prop->setAccessible(true);
+        $prop->setValue($object, $value);
+        $prop->setAccessible(false);
     }
 
     /**

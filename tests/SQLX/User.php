@@ -29,7 +29,6 @@ class User extends Entity
 
     public function __construct(string $name, string $email, string $password)
     {
-        $this->id = 0;
         $this->name = $name;
         $this->email = $email;
         $this->password = $password;
