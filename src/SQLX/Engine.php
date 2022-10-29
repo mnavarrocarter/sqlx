@@ -28,7 +28,6 @@ use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\Tracker;
 use MNC\SQLX\SQL\Connection;
 use MNC\SQLX\SQL\Mapper;
-use Traversable;
 
 class Engine
 {
@@ -66,12 +65,17 @@ class Engine
 
     /**
      * Finds one object.
+     *
+     * @throws EngineError
      */
     public function findOne(Context $ctx, string $class, mixed $where, mixed ...$args): object
     {
         throw new LogicException('Not Implemented');
     }
 
+    /**
+     * @throws EngineError
+     */
     public function findFirst(Context $ctx, string $class, mixed $where, mixed ...$args): object
     {
         throw new LogicException('Not Implemented');
@@ -79,8 +83,10 @@ class Engine
 
     /**
      * Finds many objects.
+     *
+     * @throws EngineError
      */
-    public function findMany(Context $ctx, string $class, mixed $where, mixed ...$args): Traversable
+    public function findMany(Context $ctx, string $class, mixed $where, mixed ...$args): iterable
     {
         throw new LogicException('Not Implemented');
     }
@@ -130,10 +136,24 @@ class Engine
      * Deletes an object from the database.
      *
      * The object must be "tracked" by the engine, otherwise deletion will fail.
+     *
+     * @throws EngineError
      */
     public function delete(Context $ctx, object $entity): void
     {
-        throw new LogicException('Not Implemented');
+        if (!$this->tracker->isTracked($entity)) {
+            throw new EngineError('Cannot delete an untracked object.');
+        }
+
+        $cmd = $this->toCommand($ctx, $entity, EntityMapper::CMD_DELETE);
+
+        try {
+            $this->operator->execute($ctx, $cmd);
+        } catch (Operator\ExecutionError $e) {
+            throw new EngineError('Error while deleting', 0, $e);
+        }
+
+        $this->tracker->forget($entity);
     }
 
     /**

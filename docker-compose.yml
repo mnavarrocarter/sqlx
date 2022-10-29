@@ -3,12 +3,24 @@ version: '3.8'
 services:
 
   lib:
-    image: mnavarro/sqlx:dev
+    image: mnavarro/sqlx:8.0-dev
     build:
       context: .mnavarro/docker
-      dockerfile: ./lib/Dockerfile
+      dockerfile: ./lib/Dockerfile80
       target: dev
-    container_name: mnavarro.sqlx.lib
+    container_name: mnavarro.sqlx.80.lib
+    working_dir: /php/lib
+    volumes:
+      - .:/php/lib
+    user: ${UID:-1000}
+
+  lib81:
+    image: mnavarro/sqlx:8.1-dev
+    build:
+      context: .mnavarro/docker
+      dockerfile: ./lib/Dockerfile81
+      target: dev
+    container_name: mnavarro.sqlx.81.lib
     working_dir: /php/lib
     volumes:
       - .:/php/lib

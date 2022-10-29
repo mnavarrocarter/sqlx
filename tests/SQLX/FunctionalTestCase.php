@@ -92,6 +92,40 @@ abstract class FunctionalTestCase extends TestCase
         return $this->conn;
     }
 
+    protected function assertRecordExists(string $table, string $id, mixed $v): void
+    {
+        $conn = $this->getConnection();
+        $query = Raw::query(sprintf('SELECT EXISTS(SELECT %s FROM %s WHERE %s = ?)', $id, $table, $id), $v);
+
+        try {
+            $rows = $conn->query(Context\nil(), $query);
+        } catch (ExecutionError $e) {
+            $this->fail('Failed to execute assertion: '.$e->getMessage());
+        }
+
+        $val = null;
+        $rows->scan($val);
+
+        $this->assertContains($val, ['1', 1, true], sprintf('Record where %s = %s does exist in %s table', $id, $v, $table));
+    }
+
+    protected function assertRecordNotExists(string $table, string $id, mixed $v): void
+    {
+        $conn = $this->getConnection();
+        $query = Raw::query(sprintf('SELECT EXISTS(SELECT %s FROM %s WHERE %s = ?)', $id, $table, $id), $v);
+
+        try {
+            $rows = $conn->query(Context\nil(), $query);
+        } catch (ExecutionError $e) {
+            $this->fail('Failed to execute assertion: '.$e->getMessage());
+        }
+
+        $val = null;
+        $rows->scan($val);
+
+        $this->assertContains($val, ['0', 0, false], sprintf('Record where %s %s does not exist in %s table', $id, $v, $table));
+    }
+
     /**
      * @param mixed $id
      */
@@ -107,7 +141,7 @@ abstract class FunctionalTestCase extends TestCase
         }
 
         $row = [];
-        $rows->scan($row);
+        $rows->scanAssoc($row);
 
         foreach ($data as $key => $datum) {
             $this->assertArrayHasKey($key, $row, sprintf('Column %s does not exist in result', $key));

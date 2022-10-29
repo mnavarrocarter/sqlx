@@ -128,6 +128,29 @@ class SqliteTest extends FunctionalTestCase
         ]);
     }
 
+    /**
+     * @throws EngineError
+     */
+    public function testInsertAndDelete(): void
+    {
+        $engine = Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+
+        $ctx = Context\nil();
+
+        $user = new User('John Doe', 'jdoe@example.com', 'secret');
+
+        $engine->persist($ctx, $user);
+
+        $this->assertRecordExists('user', 'id', 1);
+
+        $engine->delete($ctx, $user);
+
+        $this->assertRecordNotExists('user', 'id', 1);
+    }
+
     protected function getSetupStatements(): iterable
     {
         yield FromFile::open(__DIR__.'/testdata/sqlite/users.sql');

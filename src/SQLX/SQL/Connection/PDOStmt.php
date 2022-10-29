@@ -39,9 +39,17 @@ final class PDOStmt implements Result, Rows
         return (string) $this->pdo->lastInsertId();
     }
 
-    public function scan(mixed &$value): void
+    public function scanAssoc(array &$value): void
     {
         $value = $this->stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function scan(mixed &...$values): void
+    {
+        $fetched = $this->stmt->fetch(PDO::FETCH_NUM);
+        array_walk($values, static function (mixed &$val, $i) use ($fetched) {
+            $val = $fetched[$i] ?? null;
+        });
     }
 
     public function toArray(): array

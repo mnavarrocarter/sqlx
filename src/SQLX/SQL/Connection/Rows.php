@@ -18,7 +18,12 @@ namespace MNC\SQLX\SQL\Connection;
 
 interface Rows
 {
-    public function scan(mixed &$value): void;
+    public function scanAssoc(array &$value): void;
+
+    /**
+     * @param array $values
+     */
+    public function scan(mixed &...$values): void;
 
     public function toArray(): array;
 }
