@@ -1,5 +1,5 @@
 META_FOLDER = .mnavarro
-MAIN_SERVICE_NAME = lib
+MAIN_SERVICE_NAME = lib80
 COMPOSE_CMD ?= docker-compose
 
 setup: prepare boot

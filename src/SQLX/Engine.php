@@ -26,11 +26,18 @@ use MNC\SQLX\Engine\Namer\Underscore;
 use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\Tracker;
 use MNC\SQLX\SQL\Connection;
+use MNC\SQLX\SQL\Driver;
 use MNC\SQLX\SQL\Mapper;
 use MNC\SQLX\SQL\Statement;
 
 class Engine
 {
+    /**
+     * We recommend you don't try to create your own instance but use the
+     * configure or make methods.
+     *
+     * @internal
+     */
     public function __construct(
         private Connection $connection,
         private Tracker $tracker,
@@ -45,6 +52,10 @@ class Engine
 
     public static function make(Configuration $config): Engine
     {
+        $connection = $config->getConnection();
+
+        $tracker = $config->getTracker() ?? new Tracker\InMemory();
+
         $mapper = new Mapper\Standard();
         foreach ($config->getMappers() as $mapperFn) {
             $mapper = $mapperFn($mapper);
@@ -55,11 +66,16 @@ class Engine
         $accessor = $config->getAccessorStore() ?? new PropertyAccessor\Store\ClosureBased();
         $metadata = $config->getMetadataStore() ?? new Metadata\Store\Reflection($namer);
 
-        return new self(
-            $config->getConnection(),
-            $config->getTracker() ?? new Tracker\InMemory(),
-            new EntityMapper($mapper, $metadata, $accessor)
-        );
+        if ($connection instanceof Driver\Aware) {
+            $mapper = new Mapper\WithDriver(
+                $mapper,
+                $connection->getDriver(),
+            );
+        }
+
+        $entityMapper = new EntityMapper($mapper, $metadata, $accessor);
+
+        return new self($connection, $tracker, $entityMapper);
     }
 
     /**

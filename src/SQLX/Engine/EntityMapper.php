@@ -112,6 +112,8 @@ final class EntityMapper implements Mapper
 
         $accessor = $this->accessor->create($value);
 
+        $ctx = Mapper\withTableName($ctx, $metadata->getTableName());
+
         return match ($operation) {
             self::QUERY_INSERT => $this->buildInsert($ctx, $accessor, $metadata),
             self::QUERY_UPDATE => $this->buildUpdate($ctx, $accessor, $metadata),
@@ -201,6 +203,8 @@ final class EntityMapper implements Mapper
      */
     private function mapFieldToDatabase(Context $ctx, PropertyAccessor $accessor, Field $field, string $class): mixed
     {
+        $ctx = Mapper\withColumnName($ctx, $field->column);
+
         try {
             $value = $accessor->get($field->meta[Field::META_SCOPE] ?? $class, $field->name);
 
@@ -228,7 +232,8 @@ final class EntityMapper implements Mapper
             return ''; // This is unsupported to the driver.
         }
 
-        $ctx = Context\withValue($ctx, Mapper::CTX_PHP_TYPE, $field->type);
+        $ctx = Mapper\withPHPType($ctx, $field->type);
+        $ctx = Mapper\withMetadata($ctx, $field->meta);
 
         try {
             $value = $this->next->toPHPValue($ctx, $rawId);

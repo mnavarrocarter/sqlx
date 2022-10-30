@@ -20,18 +20,14 @@ use Castor\Context;
 use MNC\SQLX\SQL\Connection;
 use MNC\SQLX\SQL\Connection\ExecutionError;
 use MNC\SQLX\SQL\Connection\PDOWrapper;
-use MNC\SQLX\SQL\Query\Raw;
+use MNC\SQLX\SQL\Query\Comp;
+use MNC\SQLX\SQL\Query\Select;
 use MNC\SQLX\SQL\Statement;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
-abstract class FunctionalTestCase extends TestCase
+abstract class IntegrationTestCase extends TestCase
 {
-    /**
-     * @var array{0: string, 1: null|string, 2: null|string, 3: null|array}
-     */
-    protected array $params = ['sqlite::memory', null, null, null];
-
     private ?PDO $pdo = null;
     private ?Connection $conn = null;
 
@@ -40,7 +36,7 @@ abstract class FunctionalTestCase extends TestCase
      */
     public function setUp(): void
     {
-        $this->pdo = new PDO(...$this->params);
+        $this->pdo = new PDO(...static::getConnectionParams());
         $conn = $this->getConnection();
 
         foreach ($this->getSetupStatements() as $statement) {
@@ -60,6 +56,24 @@ abstract class FunctionalTestCase extends TestCase
 
         $this->conn = null;
         $this->pdo = null;
+    }
+
+    protected static function getEnv(string $env): string
+    {
+        $val = getenv($env);
+        if (!is_string($val)) {
+            self::markTestSkipped(sprintf('Environment variable "%s" is not defined', $env));
+        }
+
+        return $val;
+    }
+
+    /**
+     * @return array{0: string, 1: null|string, 2: null|string, 3: null|array}
+     */
+    protected static function getConnectionParams(): array
+    {
+        return ['sqlite::memory', null, null, null];
     }
 
     /**
@@ -95,7 +109,7 @@ abstract class FunctionalTestCase extends TestCase
     protected function assertRecordExists(string $table, string $id, mixed $v): void
     {
         $conn = $this->getConnection();
-        $query = Raw::query(sprintf('SELECT EXISTS(SELECT %s FROM %s WHERE %s = ?)', $id, $table, $id), $v);
+        $query = Select::all()->from($table)->andWhere(Comp::eq($id, $v))->toCount();
 
         try {
             $rows = $conn->query(Context\nil(), $query);
@@ -103,16 +117,16 @@ abstract class FunctionalTestCase extends TestCase
             $this->fail('Failed to execute assertion: '.$e->getMessage());
         }
 
-        $val = null;
+        $count = 0;
         $rows->scan($val);
 
-        $this->assertContains($val, ['1', 1, true], sprintf('Record where %s = %s does exist in %s table', $id, $v, $table));
+        $this->assertSame(0, $count, sprintf('Record where %s = %s does exist in %s table', $id, $v, $table));
     }
 
     protected function assertRecordNotExists(string $table, string $id, mixed $v): void
     {
         $conn = $this->getConnection();
-        $query = Raw::query(sprintf('SELECT EXISTS(SELECT %s FROM %s WHERE %s = ?)', $id, $table, $id), $v);
+        $query = Select::all()->from($table)->andWhere(Comp::eq($id, $v))->toCount();
 
         try {
             $rows = $conn->query(Context\nil(), $query);
@@ -120,10 +134,10 @@ abstract class FunctionalTestCase extends TestCase
             $this->fail('Failed to execute assertion: '.$e->getMessage());
         }
 
-        $val = null;
-        $rows->scan($val);
+        $count = 0;
+        $rows->scan($count);
 
-        $this->assertContains($val, ['0', 0, false], sprintf('Record where %s %s does not exist in %s table', $id, $v, $table));
+        $this->assertNotSame(1, $count, sprintf('Record where %s %s does not exist in %s table', $id, $v, $table));
     }
 
     /**
@@ -132,7 +146,7 @@ abstract class FunctionalTestCase extends TestCase
     protected function assertRecordContains(string $table, string $id, mixed $v, array $data): void
     {
         $conn = $this->getConnection();
-        $query = Raw::query(sprintf('SELECT * FROM %s WHERE %s = ?', $table, $id), $v);
+        $query = Select::all()->from($table)->andWhere(Comp::eq($id, $v));
 
         try {
             $rows = $conn->query(Context\nil(), $query);

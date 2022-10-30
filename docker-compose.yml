@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
 
-  lib:
+  lib80:
     image: mnavarro/sqlx:8.0-dev
     build:
       context: .mnavarro/docker
       dockerfile: ./lib/Dockerfile80
       target: dev
-    container_name: mnavarro.sqlx.80.lib
+    container_name: mmnavarro.sqlx.lib80.dev
     working_dir: /php/lib
     volumes:
       - .:/php/lib
+    env_file: .env.test
     user: ${UID:-1000}
 
   lib81:
@@ -20,8 +21,17 @@ services:
       context: .mnavarro/docker
       dockerfile: ./lib/Dockerfile81
       target: dev
-    container_name: mnavarro.sqlx.81.lib
+    container_name: mnavarro.sqlx.lib81.dev
     working_dir: /php/lib
+    env_file: .env.test
     volumes:
       - .:/php/lib
     user: ${UID:-1000}
+
+  postgres14:
+    image: postgres:14-alpine
+    container_name: mnavarro.sqlx.postgres14.dev
+    environment:
+      POSTGRES_USER: sqlx
+      POSTGRES_PASSWORD: sqlx
+      POSTGRES_DB: sqlx

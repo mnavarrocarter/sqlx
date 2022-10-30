@@ -37,27 +37,11 @@ use MNC\SQLX\SQL\Query\FromFile;
  * @internal
  *
  * @coversDefaultClass
+ *
+ * @group postgres
  */
-class SqliteTest extends FunctionalTestCase
+class Postgres14IntegrationTest extends IntegrationTestCase
 {
-    public const FILENAME = __DIR__.'/testdata/database.sqlite';
-
-    protected array $params = ['sqlite://'.self::FILENAME];
-
-    public function setUp(): void
-    {
-        if (is_file(self::FILENAME)) {
-            unlink(self::FILENAME);
-        }
-        parent::setUp();
-    }
-
-    public function tearDown(): void
-    {
-        parent::tearDown();
-        unlink(self::FILENAME);
-    }
-
     /**
      * @throws EngineError
      */
@@ -341,6 +325,20 @@ class SqliteTest extends FunctionalTestCase
         $this->assertEquals(1, $count);
     }
 
+    protected static function getConnectionParams(): array
+    {
+        $dsn = sprintf(
+            'pgsql:host=%s;port=%s;dbname=%s;user=%s;password=%s',
+            self::getEnv('PGSQL_HOST'),
+            self::getEnv('PGSQL_PORT'),
+            self::getEnv('PGSQL_DBNM'),
+            self::getEnv('PGSQL_USER'),
+            self::getEnv('PGSQL_PASS'),
+        );
+
+        return [$dsn];
+    }
+
     protected function getEngine(): Engine
     {
         return Engine::configure($this->getConnection())
@@ -351,8 +349,10 @@ class SqliteTest extends FunctionalTestCase
 
     protected function getSetupStatements(): iterable
     {
-        yield FromFile::open(__DIR__.'/testdata/sqlite.schema.sql');
+        yield FromFile::open(__DIR__.'/testdata/postgres14.clean.sql');
 
-        yield FromFile::open(__DIR__.'/testdata/sqlite.seed.sql');
+        yield FromFile::open(__DIR__.'/testdata/postgres14.schema.sql');
+
+        yield FromFile::open(__DIR__.'/testdata/postgres14.seed.sql');
     }
 }

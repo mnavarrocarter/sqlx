@@ -289,8 +289,12 @@ final class ForEntities implements Finder, IteratorAggregate
                 $clause->column = $field->column;
             }
 
-            array_walk($clause->params, function (mixed &$param) {
-                $param = $this->mapper->toDatabaseValue($this->ctx, $param);
+            // Should we map values if we can't guess the column for sure? Tricky!
+            $ctx = Mapper\withTableName($this->ctx, $this->metadata->getTableName());
+            $ctx = Mapper\withColumnName($ctx, $clause->column);
+
+            array_walk($clause->params, function (mixed &$param) use ($ctx) {
+                $param = $this->mapper->toDatabaseValue($ctx, $param);
             });
         }
     }

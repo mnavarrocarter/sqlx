@@ -20,7 +20,8 @@ use Castor\Context;
 
 interface Mapper
 {
-    public const CTX_PHP_TYPE = 'sql.php_type';
+    public const PHP_DATETIME_FORMAT = 'sqlx.php_datetime_format';
+    public const DB_DATETIME_FORMAT = 'sqlx.db_datetime_format';
 
     /**
      * Converts a database value to a PHP value.

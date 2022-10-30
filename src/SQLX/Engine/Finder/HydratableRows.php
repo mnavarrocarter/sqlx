@@ -160,7 +160,9 @@ final class HydratableRows implements Rows, IteratorAggregate
             }
 
             try {
-                $ctx = Context\withValue($this->ctx, Mapper::CTX_PHP_TYPE, $field->type);
+                $ctx = Mapper\withPHPType($this->ctx, $field->type);
+                $ctx = Mapper\withMetadata($ctx, $field->meta);
+
                 $data[$field->name] = $this->mapper->toPHPValue($ctx, $value);
             } catch (Mapper\ConversionError $e) {
                 throw new ScanError(sprintf(

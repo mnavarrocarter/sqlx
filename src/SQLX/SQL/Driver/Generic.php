@@ -14,24 +14,14 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Dialect;
+namespace MNC\SQLX\SQL\Driver;
 
-use MNC\SQLX\SQL\Dialect;
+use MNC\SQLX\SQL\Driver;
 
-final class Noop implements Dialect
+final class Generic implements Driver
 {
-    public function quoteTable(string $table): string
+    public function getName(): string
     {
-        return $table;
-    }
-
-    public function quoteColumn(string $column): string
-    {
-        return $column;
-    }
-
-    public function cleanValue(mixed $value): mixed
-    {
-        return $value;
+        return self::GENERIC;
     }
 }

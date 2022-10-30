@@ -66,4 +66,57 @@ jobs:
         if: ${{ matrix.dependencies == 'locked' }}
         run: "vendor/bin/psalm --shepherd --stats"
       - name: "Run Test Suite"
-        run: "vendor/bin/phpunit"
+        run: "vendor/bin/phpunit --exclude-group=postgres"
+
+  postgres-tests:
+    name: "Postgres Test Suite"
+    runs-on: ${{ matrix.operating-system }}
+    needs: php-code-checks
+    env:
+      PGSQL_HOST: postgres
+      PGSQL_PORT: 5432
+      PGSQL_USER: sqlx
+      PGSQL_PASS: sqlx
+      PGSQL_DBNM: sqlx
+    strategy:
+      matrix:
+        postgres-version:
+          - "14-alpine"
+        php-version:
+          - "8.0"
+        operating-system:
+          - "ubuntu-latest"
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres-version }}
+        env:
+          POSTGRES_USER: sqlx
+          POSTGRES_PASSWORD: sqlx
+          POSTGRES_DB: sqlx
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: "Checkout Code"
+        uses: "actions/checkout@v2"
+      - name: "Install PHP"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          coverage: "pcov"
+          php-version: "8.0"
+          ini-values: memory_limit=-1
+          tools: composer:v2
+      - name: "Cache Dependencies"
+        uses: "actions/cache@v2"
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}"
+          restore-keys: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}"
+      - name: "Install Locked Dependencies"
+        run: "composer install ${{ env.COMPOSER_FLAGS }}"
+      - name: "Run Postgres Test Suite"
+        run: "vendor/bin/phpunit --group=postgres"

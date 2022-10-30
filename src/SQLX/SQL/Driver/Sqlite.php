@@ -14,12 +14,18 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Dialect;
+namespace MNC\SQLX\SQL\Driver;
 
 use MNC\SQLX\SQL\Dialect;
+use MNC\SQLX\SQL\Driver;
 
-final class Noop implements Dialect
+final class Sqlite implements Driver, Dialect
 {
+    public function getName(): string
+    {
+        return self::SQLITE;
+    }
+
     public function quoteTable(string $table): string
     {
         return $table;

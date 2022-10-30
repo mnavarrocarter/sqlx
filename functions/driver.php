@@ -14,11 +14,22 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Connection;
+namespace MNC\SQLX\SQL\Driver;
 
-use MNC\SQLX\SQL\Dialect;
+use Castor\Context;
+use MNC\SQLX\SQL\Driver;
 
-interface DialectAware
+/**
+ * @internal
+ */
+const DRIVER_KEY = 'sqlx.driver';
+
+function withDriver(Context $ctx, Driver $driver): Context
 {
-    public function getDialect(): Dialect;
+    return Context\withValue($ctx, DRIVER_KEY, $driver);
+}
+
+function getDriver(Context $ctx): Driver
+{
+    return $ctx->value(DRIVER_KEY) ?? new Generic();
 }

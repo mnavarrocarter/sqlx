@@ -32,7 +32,7 @@ final class Comp implements Clause
     private const LT = '<';
     private const LTE = '<=';
     private const NULL = 'IS NULL';
-    private const NOT_NULL = 'NOT NULL';
+    private const NOT_NULL = 'IS NOT NULL';
     private const BETWEEN = 'BETWEEN';
     private const IN = 'IN';
     private const LIKE = 'LIKE';

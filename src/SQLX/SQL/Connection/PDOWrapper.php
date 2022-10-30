@@ -17,9 +17,9 @@ declare(strict_types=1);
 namespace MNC\SQLX\SQL\Connection;
 
 use Castor\Context;
-use LogicException;
 use MNC\SQLX\SQL\Connection;
 use MNC\SQLX\SQL\Dialect;
+use MNC\SQLX\SQL\Driver;
 use MNC\SQLX\SQL\Statement;
 use PDO;
 use PDOException;
@@ -27,25 +27,39 @@ use PDOException;
 /**
  * PDOWrapper is both a connection and a driver for databases in PHP.
  */
-final class PDOWrapper implements Connection, DialectAware, Dialect
+final class PDOWrapper implements Connection, Driver\Aware
 {
     private PDO $pdo;
+    private Driver $driver;
 
-    private function __construct(PDO $pdo)
+    /**
+     * We recommend calling one of the static constructors.
+     *
+     * This is because we attempt to guess the driver being used to provide
+     * additional features to this library.
+     *
+     * @internal
+     */
+    public function __construct(PDO $pdo, Driver $driver)
     {
         $this->pdo = $pdo;
-    }
-
-    public static function build(string $uri): PDOWrapper
-    {
-        throw new LogicException('Not Implemented');
+        $this->driver = $driver;
     }
 
     public static function from(PDO $pdo): PDOWrapper
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        return new self($pdo);
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        $dialect = match ($driver) {
+            Driver::PGSQL => new Driver\Postgres(),
+            Driver::MYSQL => new Driver\MySQL(),
+            Driver::SQLITE => new Driver\Sqlite(),
+            default => new Driver\Generic(),
+        };
+
+        return new self($pdo, $dialect);
     }
 
     /**
@@ -61,20 +75,20 @@ final class PDOWrapper implements Connection, DialectAware, Dialect
         return $this->doExecute($ctx, $statement);
     }
 
+    public function getDriver(): Driver
+    {
+        return $this->driver;
+    }
+
     /**
      * @throws ExecutionError
      */
-    final public function doExecute(Context $ctx, Statement $statement): PDOStmt
+    private function doExecute(Context $ctx, Statement $statement): PDOStmt
     {
         $dialect = $ctx->value(Dialect::KEY) ?? $this->getDialect();
 
         try {
             $stmt = $this->pdo->prepare($statement->getSQL($dialect));
-        } catch (PDOException $e) {
-            throw new ExecutionError('Query syntax error', 0, $e);
-        }
-
-        try {
             $stmt->execute($statement->getParameters($dialect));
         } catch (PDOException $e) {
             throw new ExecutionError('Query execution error', 0, $e);
@@ -83,23 +97,12 @@ final class PDOWrapper implements Connection, DialectAware, Dialect
         return new PDOStmt($this->pdo, $stmt);
     }
 
-    public function getDialect(): Dialect
+    private function getDialect(): Dialect
     {
-        return $this;
-    }
+        if ($this->driver instanceof Dialect) {
+            return $this->driver;
+        }
 
-    public function quoteTable(string $table): string
-    {
-        return $table;
-    }
-
-    public function quoteColumn(string $column): string
-    {
-        return $column;
-    }
-
-    public function cleanValue(mixed $value): mixed
-    {
-        return $value;
+        return new Dialect\Noop();
     }
 }
