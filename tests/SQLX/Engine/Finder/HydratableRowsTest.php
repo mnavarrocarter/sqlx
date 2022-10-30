@@ -14,13 +14,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL;
+namespace MNC\SQLX\Engine\Finder;
 
-interface Dialect
+use PHPUnit\Framework\TestCase;
+
+/**
+ * @internal
+ *
+ * @covers \MNC\SQLX\Engine\Finder\HydratableRows
+ */
+class HydratableRowsTest extends TestCase
 {
-    public function quoteTable(string $table): string;
-
-    public function quoteColumn(string $column): string;
-
-    public function cleanValue(mixed $value): mixed;
 }

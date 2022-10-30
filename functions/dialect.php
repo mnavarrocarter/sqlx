@@ -14,13 +14,9 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL;
+namespace MNC\SQLX\SQL\Dialect;
 
-interface Dialect
-{
-    public function quoteTable(string $table): string;
-
-    public function quoteColumn(string $column): string;
-
-    public function cleanValue(mixed $value): mixed;
-}
+/**
+ * @internal
+ */
+const CTX_DIALECT = 'sqlx.dialect';

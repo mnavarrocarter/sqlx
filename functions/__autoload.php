@@ -19,3 +19,5 @@ require_once __DIR__.'/hooks.php';
 require_once __DIR__.'/driver.php';
 
 require_once __DIR__.'/mapper.php';
+
+require_once __DIR__.'/dialect.php';

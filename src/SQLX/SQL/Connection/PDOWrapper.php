@@ -50,16 +50,16 @@ final class PDOWrapper implements Connection, Driver\Aware
     {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $pdoDriver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
 
-        $dialect = match ($driver) {
+        $driver = match ($pdoDriver) {
             Driver::PGSQL => new Driver\Postgres(),
             Driver::MYSQL => new Driver\MySQL(),
             Driver::SQLITE => new Driver\Sqlite(),
             default => new Driver\Generic(),
         };
 
-        return new self($pdo, $dialect);
+        return new self($pdo, $driver);
     }
 
     /**
@@ -85,7 +85,7 @@ final class PDOWrapper implements Connection, Driver\Aware
      */
     private function doExecute(Context $ctx, Statement $statement): PDOStmt
     {
-        $dialect = $ctx->value(Dialect::KEY) ?? $this->getDialect();
+        $dialect = $ctx->value(Dialect\CTX_DIALECT) ?? $this->getDialect();
 
         try {
             $stmt = $this->pdo->prepare($statement->getSQL($dialect));

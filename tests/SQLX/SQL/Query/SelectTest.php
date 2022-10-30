@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace MNC\SQLX\SQL\Query;
 
 use MNC\SQLX\SQL\Dialect;
+use MNC\SQLX\SQL\Driver\MySQL;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -47,5 +48,22 @@ class SelectTest extends TestCase
 
         $this->assertSame('SELECT * FROM user WHERE status = ? ORDER BY last_updated ASC LIMIT ? OFFSET ?;', $sql);
         $this->assertSame(['active', 1, 20], $params);
+    }
+
+    public function testLimitAndOffsetMySQL(): void
+    {
+        $dialect = new MySQL();
+
+        $query = Select::all()
+            ->from('user')
+            ->setLimit(1)
+            ->setOffset(20)
+        ;
+
+        $sql = $query->getSQL($dialect);
+        $params = $query->getParameters($dialect);
+
+        $this->assertSame('SELECT * FROM `user` LIMIT 20, 1;', $sql);
+        $this->assertSame([], $params);
     }
 }

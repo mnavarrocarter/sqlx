@@ -127,3 +127,57 @@ jobs:
         run: "composer install ${{ env.COMPOSER_FLAGS }}"
       - name: "Run Postgres Test Suite"
         run: "vendor/bin/phpunit --group=postgres"
+
+  mysql-tests:
+    name: "MySQL Test Suite"
+    runs-on: ${{ matrix.operating-system }}
+    needs: php-code-checks
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: sqlx
+      MYSQL_PASS: sqlx
+      MYSQL_DBNM: sqlx
+    strategy:
+      matrix:
+        mysql-version:
+          - "5.6"
+          - "5.7-debian"
+        php-version:
+          - "8.0"
+        operating-system:
+          - "ubuntu-latest"
+    services:
+      mysql:
+        image: mysql:${{ matrix.mysql-version }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_HOST: '%'
+          MYSQL_DATABASE: sqlx
+          MYSQL_USER: sqlx
+          MYSQL_PASSWORD: sqlx
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
+    steps:
+      - name: "Checkout Code"
+        uses: "actions/checkout@v2"
+      - name: "Install PHP"
+        uses: "shivammathur/setup-php@v2"
+        with:
+          coverage: "pcov"
+          php-version: "8.0"
+          ini-values: memory_limit=-1
+          tools: composer:v2
+      - name: "Cache Dependencies"
+        uses: "actions/cache@v2"
+        with:
+          path: |
+            ~/.composer/cache
+            vendor
+          key: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}"
+          restore-keys: "php-${{ matrix.php-version }}-${{ matrix.dependencies }}"
+      - name: "Install Locked Dependencies"
+        run: "composer install ${{ env.COMPOSER_FLAGS }}"
+      - name: "Run MySQL Test Suite"
+        run: "vendor/bin/phpunit --group=mysql"

@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace MNC\SQLX\SQL\Query;
 
 use MNC\SQLX\SQL\Dialect;
+use MNC\SQLX\SQL\Driver\MySQL;
 use MNC\SQLX\SQL\Statement;
 
 final class Select implements Statement
@@ -137,6 +138,11 @@ final class Select implements Statement
     {
         $where = $this->getWhereParameters($dialect);
 
+        // MySQL does LIMIT and OFFSET a bit differently
+        if ($dialect instanceof MySQL) {
+            return $where;
+        }
+
         if ($this->limit > 0) {
             $where[] = $this->limit;
         }
@@ -156,17 +162,30 @@ final class Select implements Statement
         return new SelectCount($this->table, ...$this->where);
     }
 
-    private function getColumns(Dialect $driver): string
+    private function getColumns(Dialect $dialect): string
     {
         if ([] === $this->columns) {
             return '*';
         }
 
-        return implode(', ', array_map(static fn (Column $col): string => $col->getSQL($driver), $this->columns));
+        return implode(', ', array_map(static fn (Column $col): string => $col->getSQL($dialect), $this->columns));
     }
 
-    private function getLimitAndOffset(Dialect $driver): string
+    private function getLimitAndOffset(Dialect $dialect): string
     {
+        // MySQL does LIMIT and OFFSET a bit differently
+        if ($dialect instanceof MySQL) {
+            if ($this->limit > 0 && $this->offset > 0) {
+                return sprintf('LIMIT %s, %s', $this->offset, $this->limit);
+            }
+
+            if ($this->limit > 0) {
+                return sprintf('LIMIT %s', $this->limit);
+            }
+
+            return '';
+        }
+
         $clauses = [];
         if ($this->limit > 0) {
             $clauses[] = 'LIMIT ?';

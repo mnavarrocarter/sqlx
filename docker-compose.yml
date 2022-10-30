@@ -35,3 +35,13 @@ services:
       POSTGRES_USER: sqlx
       POSTGRES_PASSWORD: sqlx
       POSTGRES_DB: sqlx
+
+  mysql57:
+    image: mysql:5.7-debian
+    container_name: mnavarro.sqlx.mysql57.dev
+    environment:
+      MYSQL_ROOT_PASSWORD: sqlx
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: sqlx
+      MYSQL_USER: sqlx
+      MYSQL_PASSWORD: sqlx
