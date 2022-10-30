@@ -16,8 +16,8 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Connection;
 
-use Exception;
+use RuntimeException;
 
-class ScanError extends Exception
+class ScanError extends RuntimeException
 {
 }

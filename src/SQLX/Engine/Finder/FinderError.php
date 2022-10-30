@@ -16,8 +16,8 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\Engine\Finder;
 
-use Exception;
+use RuntimeException;
 
-class FinderError extends Exception
+class FinderError extends RuntimeException
 {
 }

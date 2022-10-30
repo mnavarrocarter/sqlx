@@ -44,12 +44,12 @@ final class FromFile implements Statement
         return new self($sql);
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
         return $this->sql;
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
         return [];
     }

@@ -108,24 +108,24 @@ final class Select implements Statement
         return $this;
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
-        $sql = 'SELECT '.$this->getColumns($driver);
+        $sql = 'SELECT '.$this->getColumns($dialect);
 
         if ('' !== $this->table) {
-            $sql .= ' FROM '.$driver->quoteTable($this->table);
+            $sql .= ' FROM '.$dialect->quoteTable($this->table);
         }
 
         if ([] !== $this->where) {
-            $sql = sprintf('%s %s', $sql, $this->getWhereSQL($driver));
+            $sql = sprintf('%s %s', $sql, $this->getWhereSQL($dialect));
         }
 
-        $ob = $this->getOrderBy($driver);
+        $ob = $this->getOrderBy($dialect);
         if ('' !== $ob) {
             $sql .= ' '.$ob;
         }
 
-        $lo = $this->getLimitAndOffset($driver);
+        $lo = $this->getLimitAndOffset($dialect);
         if ('' !== $lo) {
             $sql .= ' '.$lo;
         }
@@ -133,9 +133,9 @@ final class Select implements Statement
         return $sql.';';
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
-        $where = $this->getWhereParameters($driver);
+        $where = $this->getWhereParameters($dialect);
 
         if ($this->limit > 0) {
             $where[] = $this->limit;
@@ -146,6 +146,14 @@ final class Select implements Statement
         }
 
         return $where;
+    }
+
+    /**
+     * Transforms this select query into a count query.
+     */
+    public function toCount(): SelectCount
+    {
+        return new SelectCount($this->table, ...$this->where);
     }
 
     private function getColumns(Dialect $driver): string

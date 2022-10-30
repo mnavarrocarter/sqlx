@@ -29,9 +29,9 @@ final class Column implements Clause
         $this->as = $as;
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
-        $col = $driver->quoteColumn($this->name);
+        $col = $dialect->quoteColumn($this->name);
         if ('' !== $this->as) {
             $col .= ' AS '.$this->as;
         }
@@ -39,7 +39,7 @@ final class Column implements Clause
         return $col;
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
         return [];
     }

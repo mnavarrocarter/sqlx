@@ -213,6 +213,26 @@ class SqliteTest extends FunctionalTestCase
      * @throws FinderError
      * @throws ScanError
      */
+    public function testCount(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $finder = $engine->find($ctx, User::class)->andWhere('tenant_id = ?', 1);
+
+        $count = $finder->count();
+        $data = $finder->rows()->toArray();
+
+        $this->assertSame(1, $count);
+        $this->assertCount(1, $data);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws ScanError
+     */
     public function testFindsNoneFoundWithRowsArray(): void
     {
         $engine = $this->getEngine();
@@ -231,7 +251,7 @@ class SqliteTest extends FunctionalTestCase
      * @throws FinderError
      * @throws NotFoundError
      */
-    public function testFindsMoreThanOne(): void
+    public function testFindsMoreThanOneError(): void
     {
         $engine = $this->getEngine();
 
@@ -297,6 +317,28 @@ class SqliteTest extends FunctionalTestCase
         $users = $engine->find($ctx, User::class)->rows()->toArray();
 
         $this->assertCount(1, $users);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     */
+    public function testCountWithFilter(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+        $ctx = withFilter($ctx, static function (Filterable $filterable, Metadata $metadata) {
+            if (User::class !== $metadata->getClassName()) {
+                return;
+            }
+
+            $filterable->andWhere(Comp::eq('tenantId', 1));
+        });
+
+        $count = $engine->find($ctx, User::class)->count();
+
+        $this->assertEquals(1, $count);
     }
 
     protected function getEngine(): Engine

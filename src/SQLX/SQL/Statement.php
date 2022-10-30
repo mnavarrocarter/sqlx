@@ -18,7 +18,17 @@ namespace MNC\SQLX\SQL;
 
 interface Statement
 {
-    public function getSQL(Dialect $driver): string;
+    /**
+     * Returns the SQL from the statement.
+     *
+     * The dialect quotes reserved keywords accordingly.
+     */
+    public function getSQL(Dialect $dialect): string;
 
-    public function getParameters(Dialect $driver): array;
+    /**
+     * Returns the parameters from the statement.
+     *
+     * The dialect handles values accordingly.
+     */
+    public function getParameters(Dialect $dialect): array;
 }

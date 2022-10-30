@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\Engine;
 
+use Countable;
 use MNC\SQLX\Engine\Finder\Filterable;
 use MNC\SQLX\Engine\Finder\FinderError;
 use MNC\SQLX\Engine\Finder\MoreThanOneError;
@@ -26,7 +27,7 @@ use MNC\SQLX\SQL\Connection\Rows;
 use MNC\SQLX\SQL\Query\Clause;
 use Traversable;
 
-interface Finder extends Filterable, Sortable, Sliceable, Traversable
+interface Finder extends Filterable, Sortable, Sliceable, Traversable, Countable
 {
     /**
      * Finds exactly one record.
@@ -55,6 +56,13 @@ interface Finder extends Filterable, Sortable, Sliceable, Traversable
      * @throws FinderError if there is a problem finding the record
      */
     public function nth(int $n): ?object;
+
+    /**
+     * Counts the number of records for the find clause.
+     *
+     * @throws FinderError if there is a problem getting the count
+     */
+    public function count(): int;
 
     /**
      * Gets the rows object.

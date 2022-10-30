@@ -1,30 +1,29 @@
 SQLX
 ====
 
-Modern, low-overhead relational database toolkit for simple PHP applications.
+Simple, low-overhead relational database toolkit for modern PHP applications.
 
 ![php-workflow](https://github.com/mnavarrocarter/sqlx/actions/workflows/php.yml/badge.svg?branch=main)
-![code-coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg?longCache=true&style=flat)
+![code-coverage](https://img.shields.io/badge/Coverage-71%25-yellow.svg?longCache=true&style=flat)
 
 ## Quick Start
+
+You can map any of your classes as an entity just marking with the `SQLX\Entity` attribute and 
+marking the id fields with the `SQLX\Id` attributes. All the other stuff can be guessed at runtime.
+
+Of course, you can also be explicit by passing the `SQLX\Field` annotation.
 
 ```php
 <?php
 
 use MNC\SQLX\Engine\Metadata as SQLX;
-use MNC\SQLX\SQL\Connection\PDOWrapper;
-use MNC\SQLX\Engine;
-use Castor\Context;
-
-// We just need minimal information to map your class to a database table.
-// The entity annotation and the id columns
-// All the other things can be guessed using typing information
 
 #[SQLX\Entity]
 class Account
 {
     #[SQLX\Id]
     private int $id;
+    #[SQLX\Field('user_name')]
     private string $username;
     private string $email;
     private string $password;
@@ -42,29 +41,66 @@ class Account
     {
         return $this->id;
     }
+    
+    public function changePassword(string $password): void
+    {
+        $this->password = $newPassword;
+    }
 }
+```
 
-// Bootstrapping the engine is simple
+Then, in your bootstrapping code, you can initialize the engine. Here we configure it with a simple
+`PDOWrapper` connection instance. We also add a `Namer` strategy to cast all properties without 
+explicit column names to underscore. So `createdAt` property will be mapped to the `created_at` 
+column.
+
+```php
+<?php
+
+use MNC\SQLX\SQL\Connection\PDOWrapper;
+use MNC\SQLX\Engine;
+use Castor\Context;
+
 $conn = PDOWrapper::from(new PDO('sqlite::memory'));
 $engine = Engine::configure($conn)
     ->withNamer(new Engine\Namer\Underscore())
     ->build()
 ;
+```
 
+Once you have the engine bootstrapped, is easy to inject it into your services and use its public 
+api. This is the full public api at the moment. Every other detail is considered internal.
+
+```php
 $ctx = Context\nil();
+
+// You can work with your objects in the domain layer.
 $account = new Account('jdoe', 'jdoe@example.com', 'secret');
 
 // Persisting a new object causes an insert:
-// INSERT INTO account (username, email, password, created_at) VALUES ('jdoe', 'jdoe@example.com', 'secret')
+// INSERT INTO account (user_name, email, password, created_at) VALUES ('jdoe', 'jdoe@example.com', 'secret')
 $engine->persist($ctx, $account);
 
-// Upon insertion, we fetch the last inserted id
+// Upon insertion, we can fetch the last inserted id.
+// We grab it automatically for you if the driver supports it.
 echo $user->getId(); // (int) 1 
 
+// Is easy to find records:
+// SELECT FROM account * WHERE id = 1;
+$account = $engine->find($ctx, Account::class)->andWhere('id = ?', 1)->one();
+
+$account->changePassword('secret2');
+
 // Persisting an existing or "known" object causes an update:
-// UPDATE account SET username = 'jdoe', email = 'jdoe@example.com', password = 'secret' WHERE id = 1
+// UPDATE account SET user_name = 'jdoe', email = 'jdoe@example.com', password = 'secret2' WHERE id = 1
 $engine->persist($ctx, $account);
+
+// You can delete an object of course
+// DELETE FROM account WHERE id = 1
+$engine->delete($ctx, $account);
 ```
+
+> NOTE: All queries are correctly escaped and parametrized.
 
 ## Caveats
 

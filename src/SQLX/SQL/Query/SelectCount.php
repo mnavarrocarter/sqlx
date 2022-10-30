@@ -16,62 +16,48 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\SQL\Query;
 
+use MNC\SQLX\Engine\Finder\Filterable;
 use MNC\SQLX\SQL\Dialect;
 use MNC\SQLX\SQL\Statement;
 
-final class Update implements Statement
+final class SelectCount implements Statement, Filterable
 {
     use Parts\Where;
-    use Parts\Values;
 
     private string $table;
 
-    public function __construct(string $table)
+    public function __construct(string $table, Clause ...$where)
     {
         $this->table = $table;
+        $this->where = $where;
     }
 
-    public static function table(string $table): Update
-    {
-        return new self($table);
-    }
-
-    public function andWhere(Clause|string $clause, mixed ...$args): Update
+    public function andWhere(Clause|string $clause, mixed ...$args): SelectCount
     {
         $this->addAndWhere($clause, ...$args);
 
         return $this;
     }
 
-    public function orWhere(Clause|string $clause, mixed ...$args): Update
+    public function orWhere(Clause|string $clause, mixed ...$args): SelectCount
     {
         $this->addOrWhere($clause, ...$args);
 
         return $this;
     }
 
-    public function set(array $data): Update
-    {
-        $this->addSet($data);
-
-        return $this;
-    }
-
     public function getSQL(Dialect $dialect): string
     {
-        return sprintf(
-            'UPDATE %s %s %s;',
-            $dialect->quoteTable($this->table),
-            $this->getSQLForSet($dialect),
-            $this->getWhereSQL($dialect)
-        );
+        $sql = sprintf('SELECT COUNT(*) FROM %s', $dialect->quoteTable($this->table));
+        if ([] !== $this->where) {
+            $sql .= ' '.$this->getWhereSQL($dialect);
+        }
+
+        return $sql;
     }
 
     public function getParameters(Dialect $dialect): array
     {
-        return array_merge(
-            $this->getValueParameters($dialect),
-            $this->getWhereParameters($dialect)
-        );
+        return $this->getWhereParameters($dialect);
     }
 }

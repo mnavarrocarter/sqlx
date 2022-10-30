@@ -1,6 +1,6 @@
 {
   "name": "mnavarro/sqlx",
-  "description": "Modern, low-overhead relational database toolkit for simple PHP applications",
+  "description": "Simple, low-overhead relational database toolkit for modern PHP applications",
   "minimum-stability": "stable",
   "license": "BSD-3-Clause",
   "authors": [

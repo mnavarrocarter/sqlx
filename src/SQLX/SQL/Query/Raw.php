@@ -35,12 +35,12 @@ final class Raw implements Clause, Statement
         return new self($sql, $args);
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
         return $this->raw;
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
         return $this->params;
     }

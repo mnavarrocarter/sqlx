@@ -63,8 +63,8 @@ class Field
      * @param string[] $labels
      */
     public function __construct(
-        string $type = '',
         string $column = '',
+        string $type = '',
         bool $nullable = false,
         mixed $default = null,
         string $name = '',

@@ -20,7 +20,6 @@ use Castor\Context;
 use Generator;
 use IteratorAggregate;
 use MNC\SQLX\Engine\Finder;
-use MNC\SQLX\Engine\Hooks;
 use MNC\SQLX\Engine\Metadata;
 use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\PropertyAccessor\Store;
@@ -194,17 +193,29 @@ final class ForEntities implements Finder, IteratorAggregate
     }
 
     /**
+     * @throws FinderError
+     */
+    public function count(): int
+    {
+        $rows = $this->query(true);
+
+        $count = 0;
+
+        try {
+            $rows->scan($count);
+        } catch (Connection\ScanError $e) {
+            throw new FinderError('Scanning error', 0, $e);
+        }
+
+        return (int) $count;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function rows(): Rows
     {
-        Hooks\getFilters($this->ctx)->apply($this, $this->metadata);
-
-        try {
-            $rows = $this->connection->query($this->ctx, $this->query);
-        } catch (Connection\ExecutionError $e) {
-            throw new FinderError('Query error', 0, $e);
-        }
+        $rows = $this->query();
 
         return new HydratableRows(
             $this->ctx,
@@ -236,6 +247,24 @@ final class ForEntities implements Finder, IteratorAggregate
             }
 
             yield $this;
+        }
+    }
+
+    /**
+     * Executes a query.
+     *
+     * @param bool $count Whether this is a count query
+     *
+     * @throws FinderError
+     */
+    private function query(bool $count = false): Rows
+    {
+        $query = $count ? $this->query->toCount() : $this->query;
+
+        try {
+            return $this->connection->query($this->ctx, $query);
+        } catch (Connection\ExecutionError $e) {
+            throw new FinderError('Query error', 0, $e);
         }
     }
 

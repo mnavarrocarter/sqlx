@@ -47,17 +47,17 @@ class Insert implements Statement
         return $this;
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
         return sprintf(
             'INSERT INTO %s %s;',
-            $driver->quoteTable($this->table),
-            $this->getSQLForValues($driver)
+            $dialect->quoteTable($this->table),
+            $this->getSQLForValues($dialect)
         );
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
-        return $this->getValueParameters($driver);
+        return $this->getValueParameters($dialect);
     }
 }

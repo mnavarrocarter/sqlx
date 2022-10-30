@@ -20,7 +20,7 @@ use MNC\SQLX\SQL\Dialect;
 
 interface Clause
 {
-    public function getSQL(Dialect $driver): string;
+    public function getSQL(Dialect $dialect): string;
 
-    public function getParameters(Dialect $driver): array;
+    public function getParameters(Dialect $dialect): array;
 }

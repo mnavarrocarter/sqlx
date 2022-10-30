@@ -20,6 +20,8 @@ use MNC\SQLX\SQL\Dialect;
 
 /**
  * Comp represents a comparison statement.
+ *
+ * It usually involves a column and an operator, along with a set of values.
  */
 final class Comp implements Clause
 {
@@ -33,9 +35,10 @@ final class Comp implements Clause
     private const NOT_NULL = 'NOT NULL';
     private const BETWEEN = 'BETWEEN';
     private const IN = 'IN';
+    private const LIKE = 'LIKE';
 
-    public string $operator;
     public string $column;
+    public string $operator;
     public array $params;
 
     private function __construct(string $operator, string $column, mixed ...$params)
@@ -95,7 +98,17 @@ final class Comp implements Clause
         return new Comp(self::IN, $column, ...$values);
     }
 
-    public function getSQL(Dialect $driver): string
+    public static function like(string $column, string $value): Comp
+    {
+        return new Comp(self::LIKE, $column, $value);
+    }
+
+    public static function custom(string $column, string $operator, mixed $value): Comp
+    {
+        return new Comp($column, $operator, $value);
+    }
+
+    public function getSQL(Dialect $dialect): string
     {
         return match ($this->operator) {
             self::EQ,
@@ -105,33 +118,41 @@ final class Comp implements Clause
             self::LT,
             self::LTE => sprintf(
                 '%s %s ?',
-                $driver->quoteColumn($this->column),
+                $dialect->quoteColumn($this->column),
                 $this->operator
             ),
 
             self::NULL,
             self::NOT_NULL => sprintf(
                 '%s %s',
-                $driver->quoteColumn($this->column),
+                $dialect->quoteColumn($this->column),
                 $this->operator
             ),
 
             self::BETWEEN => sprintf(
                 '%s %s ? AND ?',
-                $driver->quoteColumn($this->column),
+                $dialect->quoteColumn($this->column),
                 $this->operator
             ),
 
             self::IN => sprintf(
-                '%s IN (%s)',
-                $this->column,
+                '%s %s (%s)',
+                $dialect->quoteColumn($this->column),
+                $this->operator,
                 implode(', ', array_fill(0, count($this->params), '?'))
-            )
+            ),
+
+            // This includes the LIKE clause
+            default => sprintf(
+                '%s %s ?',
+                $dialect->quoteColumn($this->column),
+                $this->operator,
+            ),
         };
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
-        return array_map([$driver, 'cleanValue'], $this->params);
+        return array_map([$dialect, 'cleanValue'], $this->params);
     }
 }

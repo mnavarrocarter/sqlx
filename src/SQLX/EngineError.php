@@ -16,8 +16,8 @@ declare(strict_types=1);
 
 namespace MNC\SQLX;
 
-use Exception;
+use RuntimeException;
 
-class EngineError extends Exception
+class EngineError extends RuntimeException
 {
 }

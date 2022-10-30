@@ -50,17 +50,17 @@ final class Delete implements Statement
         return $this;
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
         return sprintf(
             'DELETE FROM %s %s;',
-            $driver->quoteTable($this->table),
-            $this->getWhereSQL($driver)
+            $dialect->quoteTable($this->table),
+            $this->getWhereSQL($dialect)
         );
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
-        return $this->getWhereParameters($driver);
+        return $this->getWhereParameters($dialect);
     }
 }

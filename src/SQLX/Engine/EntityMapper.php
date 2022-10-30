@@ -67,7 +67,7 @@ final class EntityMapper extends Mapper\Middleware
                 throw new ConversionError('Metadata error', 0, $e);
             }
 
-            return new ForEntities(
+            $finder = new ForEntities(
                 $ctx,
                 Select::all()->from($metadata->getTableName()),
                 $value->connection,
@@ -76,6 +76,11 @@ final class EntityMapper extends Mapper\Middleware
                 $value->tracker,
                 $this->accessor,
             );
+
+            // Apply any hooks immediately
+            Hooks\getFilters($ctx)->apply($finder, $metadata);
+
+            return $finder;
         }
 
         return $next->toPHPValue($ctx, $value);

@@ -30,11 +30,11 @@ final class OrN implements Clause
         $this->clauses = $clauses;
     }
 
-    public function getSQL(Dialect $driver): string
+    public function getSQL(Dialect $dialect): string
     {
         $or = [];
         foreach ($this->clauses as $clause) {
-            $or[] = $clause->getSQL($driver);
+            $or[] = $clause->getSQL($dialect);
         }
 
         $sql = implode(' OR ', $or);
@@ -50,11 +50,11 @@ final class OrN implements Clause
         return $sql;
     }
 
-    public function getParameters(Dialect $driver): array
+    public function getParameters(Dialect $dialect): array
     {
         $params = [];
         foreach ($this->clauses as $clause) {
-            $params[] = $clause->getParameters($driver);
+            $params[] = $clause->getParameters($dialect);
         }
 
         return array_merge(...$params);
