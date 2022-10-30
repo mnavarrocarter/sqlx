@@ -19,6 +19,7 @@ namespace MNC\SQLX\Engine\Finder;
 use Castor\Context;
 use Generator;
 use IteratorAggregate;
+use MNC\SQLX\Engine\Hooks;
 use MNC\SQLX\Engine\Metadata;
 use MNC\SQLX\Engine\Metadata\Field;
 use MNC\SQLX\Engine\PropertyAccessor;
@@ -82,7 +83,7 @@ final class HydratableRows implements Rows, IteratorAggregate
      */
     public function getIterator(): Generator
     {
-        $isArray = HYDRATION_ARRAY === getHydrationMode($this->ctx);
+        $isArray = Hooks\HYDRATION_ARRAY === Hooks\getHydrationMode($this->ctx);
 
         while (true) {
             if ($isArray) {

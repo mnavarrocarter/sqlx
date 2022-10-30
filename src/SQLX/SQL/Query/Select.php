@@ -180,7 +180,7 @@ final class Select implements Statement
             return '';
         }
 
-        return implode(', ', $clauses);
+        return implode(' ', $clauses);
     }
 
     private function getOrderBy(Dialect $driver): string

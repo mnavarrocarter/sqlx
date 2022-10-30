@@ -81,6 +81,8 @@ jobs:
     strategy:
       matrix:
         postgres-version:
+          - "10-alpine"
+          - "11-alpine"
           - "12-alpine"
           - "13-alpine"
           - "14-alpine"

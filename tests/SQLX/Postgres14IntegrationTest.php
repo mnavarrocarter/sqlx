@@ -18,15 +18,9 @@ namespace MNC\SQLX;
 
 use Castor\Context;
 use MNC\SQLX\Engine\Finder\Filterable;
-use MNC\SQLX\Engine\Finder\FinderError;
 use MNC\SQLX\Engine\Finder\MoreThanOneError;
-use MNC\SQLX\Engine\Finder\NotFoundError;
-
-use function MNC\SQLX\Engine\Finder\withArrayHydration;
-use function MNC\SQLX\Engine\Hooks\withFilter;
-
+use MNC\SQLX\Engine\Hooks;
 use MNC\SQLX\Engine\Metadata;
-use MNC\SQLX\SQL\Connection\ScanError;
 use MNC\SQLX\SQL\Query\Comp;
 use MNC\SQLX\SQL\Query\FromFile;
 
@@ -42,9 +36,6 @@ use MNC\SQLX\SQL\Query\FromFile;
  */
 class Postgres14IntegrationTest extends IntegrationTestCase
 {
-    /**
-     * @throws EngineError
-     */
     public function testItInsertsNormally(): void
     {
         $engine = $this->getEngine();
@@ -65,9 +56,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         ]);
     }
 
-    /**
-     * @throws EngineError
-     */
     public function testItInsertsStringWithQuote(): void
     {
         $engine = $this->getEngine();
@@ -88,9 +76,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         ]);
     }
 
-    /**
-     * @throws EngineError
-     */
     public function testInsertionAndImmediateUpdate(): void
     {
         $engine = $this->getEngine();
@@ -117,11 +102,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         ]);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws NotFoundError
-     */
     public function testFindWithClause(): void
     {
         $engine = Engine::configure($this->getConnection())
@@ -141,12 +121,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertSame(1, $user->getId());
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws MoreThanOneError
-     * @throws NotFoundError
-     */
     public function testFindAndUpdate(): void
     {
         $engine = $this->getEngine();
@@ -169,12 +143,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         ]);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws MoreThanOneError
-     * @throws NotFoundError
-     */
     public function testFindAndDelete(): void
     {
         $engine = $this->getEngine();
@@ -192,11 +160,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertRecordNotExists('user', 'id', 2);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws ScanError
-     */
     public function testCount(): void
     {
         $engine = $this->getEngine();
@@ -212,11 +175,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertCount(1, $data);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws ScanError
-     */
     public function testFindsNoneFoundWithRowsArray(): void
     {
         $engine = $this->getEngine();
@@ -230,11 +188,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertCount(0, $data);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws NotFoundError
-     */
     public function testFindsMoreThanOneError(): void
     {
         $engine = $this->getEngine();
@@ -245,11 +198,6 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $engine->find($ctx, User::class)->one();
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws ScanError
-     */
     public function testFindsAll(): void
     {
         $engine = $this->getEngine();
@@ -263,34 +211,24 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertInstanceOf(User::class, $users[1]);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws ScanError
-     */
     public function testFindsAllAsArray(): void
     {
         $engine = $this->getEngine();
 
         $ctx = Context\nil();
-        $ctx = withArrayHydration($ctx);
+        $ctx = Hooks\withArrayHydration($ctx);
 
         $users = $engine->find($ctx, User::class)->rows()->toArray();
 
         $this->assertCount(2, $users);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws ScanError
-     */
     public function testFilter(): void
     {
         $engine = $this->getEngine();
 
         $ctx = Context\nil();
-        $ctx = withFilter($ctx, static function (Filterable $filterable, Metadata $metadata) {
+        $ctx = Hooks\withFilterFn($ctx, static function (Filterable $filterable, Metadata $metadata) {
             if (User::class !== $metadata->getClassName()) {
                 return;
             }
@@ -303,16 +241,12 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $this->assertCount(1, $users);
     }
 
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     */
     public function testCountWithFilter(): void
     {
         $engine = $this->getEngine();
 
         $ctx = Context\nil();
-        $ctx = withFilter($ctx, static function (Filterable $filterable, Metadata $metadata) {
+        $ctx = Hooks\withFilterFn($ctx, static function (Filterable $filterable, Metadata $metadata) {
             if (User::class !== $metadata->getClassName()) {
                 return;
             }
@@ -323,6 +257,29 @@ class Postgres14IntegrationTest extends IntegrationTestCase
         $count = $engine->find($ctx, User::class)->count();
 
         $this->assertEquals(1, $count);
+    }
+
+    public function testFindNth(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $user = $engine->find($ctx, User::class)->nth(1);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertEquals(2, $user->getId());
+    }
+
+    public function testFindNthWithNull(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $user = $engine->find($ctx, User::class)->nth(10);
+
+        $this->assertNull($user);
     }
 
     protected static function getConnectionParams(): array

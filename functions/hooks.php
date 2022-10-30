@@ -17,23 +17,19 @@ declare(strict_types=1);
 namespace MNC\SQLX\Engine\Hooks;
 
 use Castor\Context;
-use MNC\SQLX\Engine\Finder\Filterable;
-use MNC\SQLX\Engine\Metadata;
 
 /**
  * @internal
  */
 const FILTER_KEY = 'sqlx.filters';
 
-/**
- * @param callable(Filterable, Metadata):Filter|void $filter
- */
-function withFilter(Context $ctx, Filter|callable $filter): Context
+function withFilterFn(Context $ctx, callable $filter): Context
 {
-    if (is_callable($filter)) {
-        $filter = ClosureFilter::fromCallable($filter);
-    }
+    return withFilter($ctx, ClosureFilter::fromCallable($filter));
+}
 
+function withFilter(Context $ctx, Filter $filter): Context
+{
     $collection = $ctx->value(FILTER_KEY);
     if ($collection instanceof Collection) {
         $collection->addFilter($filter);
@@ -49,4 +45,28 @@ function withFilter(Context $ctx, Filter|callable $filter): Context
 function getFilters(Context $ctx): Filter
 {
     return $ctx->value(FILTER_KEY) ?? new Collection();
+}
+
+/**
+ * @internal
+ */
+const HYDRATE_KEY = 'sqlx.hydration';
+
+const HYDRATION_ARRAY = 0;
+
+const HYDRATION_OBJECT = 1;
+
+function withArrayHydration(Context $ctx): Context
+{
+    return Context\withValue($ctx, HYDRATE_KEY, HYDRATION_ARRAY);
+}
+
+function withObjectHydration(Context $ctx): Context
+{
+    return Context\withValue($ctx, HYDRATE_KEY, HYDRATION_OBJECT);
+}
+
+function getHydrationMode(Context $ctx): int
+{
+    return $ctx->value(HYDRATE_KEY) ?? HYDRATION_OBJECT;
 }

@@ -45,7 +45,7 @@ class SelectTest extends TestCase
         $sql = $query->getSQL($dialect);
         $params = $query->getParameters($dialect);
 
-        $this->assertSame('SELECT * FROM user WHERE status = ? ORDER BY last_updated ASC LIMIT ?, OFFSET ?;', $sql);
+        $this->assertSame('SELECT * FROM user WHERE status = ? ORDER BY last_updated ASC LIMIT ? OFFSET ?;', $sql);
         $this->assertSame(['active', 1, 20], $params);
     }
 }
