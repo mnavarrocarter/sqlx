@@ -19,8 +19,7 @@ namespace MNC\SQLX\Engine;
 use Castor\Context;
 use MNC\SQLX\Engine\Finder\ForEntities;
 use MNC\SQLX\Engine\Mapper\FindClass;
-use MNC\SQLX\Engine\Mapper\IdUpdater;
-use MNC\SQLX\Engine\Mapper\LastId;
+use MNC\SQLX\Engine\Mapper\MapLastId;
 use MNC\SQLX\Engine\Mapper\RawRecord;
 use MNC\SQLX\Engine\Metadata\Field;
 use MNC\SQLX\SQL\Mapper;
@@ -34,19 +33,20 @@ use MNC\SQLX\SQL\Query\Update;
 /**
  * The EntityMapper is responsible for mapping an entity into.
  */
-final class EntityMapper extends Mapper\Middleware
+final class EntityMapper implements Mapper
 {
     public const CTX_QUERY = 'sqlx.query';
     public const QUERY_INSERT = 0;
     public const QUERY_UPDATE = 1;
     public const QUERY_DELETE = 2;
 
+    private Mapper $next;
     private Metadata\Store $metadata;
     private PropertyAccessor\Store $accessor;
 
     public function __construct(Mapper $next, Metadata\Store $metadata, PropertyAccessor\Store $accessor)
     {
-        parent::__construct($next);
+        $this->next = $next;
         $this->metadata = $metadata;
         $this->accessor = $accessor;
     }
@@ -54,12 +54,8 @@ final class EntityMapper extends Mapper\Middleware
     /**
      * {@inheritDoc}
      */
-    protected function tryToPHPValue(Context $ctx, Mapper $next, mixed $value): mixed
+    public function toPHPValue(Context $ctx, mixed $value): mixed
     {
-        if ($value instanceof LastId) {
-            return new IdUpdater($this->metadata, $this->accessor, $next, $value);
-        }
-
         if ($value instanceof FindClass) {
             try {
                 $metadata = $this->metadata->retrieve($value->classname);
@@ -83,17 +79,21 @@ final class EntityMapper extends Mapper\Middleware
             return $finder;
         }
 
-        return $next->toPHPValue($ctx, $value);
+        if ($value instanceof MapLastId) {
+            return $this->mapLastId($ctx, $value);
+        }
+
+        return $this->next->toPHPValue($ctx, $value);
     }
 
     /**
      * {@inheritDoc}
      */
-    protected function tryToDatabaseValue(Context $ctx, Mapper $next, mixed $value): mixed
+    public function toDatabaseValue(Context $ctx, mixed $value): mixed
     {
         // If this is not an object, then we cannot map it
         if (!is_object($value)) {
-            return $next->toDatabaseValue($ctx, $value);
+            return $this->next->toDatabaseValue($ctx, $value);
         }
 
         $class = get_class($value);
@@ -105,7 +105,7 @@ final class EntityMapper extends Mapper\Middleware
         } catch (Metadata\NotFound) {
             // No metadata found means this is not an entity class.
             // We defer to the next mapper.
-            return $next->toDatabaseValue($ctx, $value);
+            return $this->next->toDatabaseValue($ctx, $value);
         }
 
         $operation = (int) ($ctx->value(self::CTX_QUERY) ?? -1);
@@ -113,19 +113,17 @@ final class EntityMapper extends Mapper\Middleware
         $accessor = $this->accessor->create($value);
 
         return match ($operation) {
-            self::QUERY_INSERT => $this->buildInsert($ctx, $accessor, $metadata, $next),
-            self::QUERY_UPDATE => $this->buildUpdate($ctx, $accessor, $metadata, $next),
-            self::QUERY_DELETE => $this->buildDelete($ctx, $accessor, $metadata, $next),
+            self::QUERY_INSERT => $this->buildInsert($ctx, $accessor, $metadata),
+            self::QUERY_UPDATE => $this->buildUpdate($ctx, $accessor, $metadata),
+            self::QUERY_DELETE => $this->buildDelete($ctx, $accessor, $metadata),
             default => new RawRecord($metadata->getTableName()),
         };
     }
 
     /**
-     * @param object $object
-     *
      * @throws ConversionError
      */
-    private function buildInsert(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Insert
+    private function buildInsert(Context $ctx, PropertyAccessor $accessor, Metadata $metadata): Insert
     {
         $insert = Insert::into($metadata->getTableName());
 
@@ -135,24 +133,22 @@ final class EntityMapper extends Mapper\Middleware
                 continue;
             }
 
-            $values[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+            $values[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $metadata->getClassName());
         }
 
         return $insert->values($values);
     }
 
     /**
-     * @param object $object
-     *
      * @throws ConversionError
      */
-    private function buildUpdate(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Update
+    private function buildUpdate(Context $ctx, PropertyAccessor $accessor, Metadata $metadata): Update
     {
         $update = Update::table($metadata->getTableName());
 
         $set = [];
         foreach ($metadata->getFields() as $field) {
-            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $metadata->getClassName());
 
             if ($field->isId()) {
                 $update->andWhere(Comp::eq($field->column, $value));
@@ -167,11 +163,9 @@ final class EntityMapper extends Mapper\Middleware
     }
 
     /**
-     * @param object $object
-     *
      * @throws ConversionError
      */
-    private function buildDelete(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): Delete
+    private function buildDelete(Context $ctx, PropertyAccessor $accessor, Metadata $metadata): Delete
     {
         $delete = Delete::from($metadata->getTableName());
 
@@ -180,7 +174,7 @@ final class EntityMapper extends Mapper\Middleware
                 continue;
             }
 
-            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+            $value = $this->mapFieldToDatabase($ctx, $accessor, $field, $metadata->getClassName());
 
             $delete->andWhere(Comp::eq($field->column, $value));
         }
@@ -191,12 +185,12 @@ final class EntityMapper extends Mapper\Middleware
     /**
      * @throws ConversionError
      */
-    private function buildRawRecord(Context $ctx, PropertyAccessor $accessor, Metadata $metadata, Mapper $next): RawRecord
+    private function buildRawRecord(Context $ctx, PropertyAccessor $accessor, Metadata $metadata): RawRecord
     {
         $record = new RawRecord($metadata->getTableName());
 
         foreach ($metadata->getFields() as $field) {
-            $record->data[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $next, $metadata->getClassName());
+            $record->data[$field->column] = $this->mapFieldToDatabase($ctx, $accessor, $field, $metadata->getClassName());
         }
 
         return $record;
@@ -205,12 +199,12 @@ final class EntityMapper extends Mapper\Middleware
     /**
      * @throws ConversionError
      */
-    private function mapFieldToDatabase(Context $ctx, PropertyAccessor $accessor, Field $field, Mapper $next, string $class): mixed
+    private function mapFieldToDatabase(Context $ctx, PropertyAccessor $accessor, Field $field, string $class): mixed
     {
         try {
             $value = $accessor->get($field->meta[Field::META_SCOPE] ?? $class, $field->name);
 
-            return $next->toDatabaseValue($ctx, $value);
+            return $this->next->toDatabaseValue($ctx, $value);
         } catch (Mapper\ConversionError|PropertyAccessor\NonexistentProperty $e) {
             throw new Mapper\ConversionError(sprintf(
                 'Error while mapping property "%s" of class "%s"',
@@ -218,5 +212,57 @@ final class EntityMapper extends Mapper\Middleware
                 $class
             ), 0, $e);
         }
+    }
+
+    private function mapLastId(Context $ctx, MapLastId $cmd): mixed
+    {
+        $class = get_class($cmd->entity);
+
+        $field = $this->getIdFieldFor($class);
+        if (null === $field) {
+            return null; // No id field means no mapping needed.
+        }
+
+        $rawId = $cmd->result->getLastInsertedId();
+        if ('' === $rawId) {
+            return ''; // This is unsupported to the driver.
+        }
+
+        $ctx = Context\withValue($ctx, Mapper::CTX_PHP_TYPE, $field->type);
+
+        try {
+            $value = $this->next->toPHPValue($ctx, $rawId);
+        } catch (ConversionError $e) {
+            // Unlikely to happen. We just return the raw value.
+            return $rawId;
+        }
+
+        $accessor = $this->accessor->create($cmd->entity);
+
+        try {
+            $accessor->set($field->meta[Metadata\Field::META_SCOPE] ?? $class, $field->name, $value);
+        } catch (PropertyAccessor\NonexistentProperty $e) {
+            // Again, unlikely this happens. We just ignore.
+        }
+
+        return $value;
+    }
+
+    private function getIdFieldFor(string $class): ?Field
+    {
+        try {
+            $metadata = $this->metadata->retrieve($class);
+        } catch (Metadata\Invalid|Metadata\NotFound) {
+            // This should never happen.
+            return null;
+        }
+
+        foreach ($metadata->getFields() as $field) {
+            if ($field->isId() && $field->isAutoincrement()) {
+                return $field;
+            }
+        }
+
+        return null;
     }
 }

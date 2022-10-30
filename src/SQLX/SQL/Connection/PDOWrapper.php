@@ -68,12 +68,16 @@ final class PDOWrapper implements Connection, DialectAware, Dialect
     {
         $dialect = $ctx->value(Dialect::KEY) ?? $this->getDialect();
 
-        $stmt = $this->pdo->prepare($statement->getSQL($dialect));
+        try {
+            $stmt = $this->pdo->prepare($statement->getSQL($dialect));
+        } catch (PDOException $e) {
+            throw new ExecutionError('Query syntax error', 0, $e);
+        }
 
         try {
             $stmt->execute($statement->getParameters($dialect));
         } catch (PDOException $e) {
-            throw new ExecutionError('Error while executing statement', 0, $e);
+            throw new ExecutionError('Query execution error', 0, $e);
         }
 
         return new PDOStmt($this->pdo, $stmt);

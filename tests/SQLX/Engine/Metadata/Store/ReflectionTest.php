@@ -14,21 +14,15 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\Engine\Mapper;
+namespace MNC\SQLX\Engine\Metadata\Store;
 
-use MNC\SQLX\SQL\Connection\Result;
+use PHPUnit\Framework\TestCase;
 
-class LastId
+/**
+ * @internal
+ *
+ * @covers \MNC\SQLX\Engine\Metadata\Store\Reflection
+ */
+class ReflectionTest extends TestCase
 {
-    private Result $result;
-
-    public function __construct(Result $result)
-    {
-        $this->result = $result;
-    }
-
-    public function getValue(): string
-    {
-        return $this->result->getLastInsertedId();
-    }
 }

@@ -22,8 +22,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  *
+ * @covers \MNC\SQLX\SQL\Query\AndN
+ * @covers \MNC\SQLX\SQL\Query\Comp
+ * @covers \MNC\SQLX\SQL\Query\OrN
  * @covers \MNC\SQLX\SQL\Query\Parts\Values
  * @covers \MNC\SQLX\SQL\Query\Parts\Where
+ * @covers \MNC\SQLX\SQL\Query\Raw
  * @covers \MNC\SQLX\SQL\Query\Update
  */
 class UpdateTest extends TestCase

@@ -22,8 +22,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  *
+ * @covers \MNC\SQLX\SQL\Query\AndN
+ * @covers \MNC\SQLX\SQL\Query\Comp
  * @covers \MNC\SQLX\SQL\Query\Insert
+ * @covers \MNC\SQLX\SQL\Query\OrN
  * @covers \MNC\SQLX\SQL\Query\Parts\Values
+ * @covers \MNC\SQLX\SQL\Query\Raw
  */
 class InsertTest extends TestCase
 {

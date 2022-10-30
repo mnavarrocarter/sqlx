@@ -37,9 +37,25 @@ final class PDOStmt implements Result, Rows, IteratorAggregate
         return $this->stmt->rowCount();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function getLastInsertedId(): string
     {
-        return (string) $this->pdo->lastInsertId();
+        $id = $this->pdo->lastInsertId();
+        if (!is_string($id)) {
+            return '';
+        }
+
+        return $id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getAffectedRows(): int
+    {
+        return $this->stmt->rowCount();
     }
 
     public function scanAssoc(array &$value): void

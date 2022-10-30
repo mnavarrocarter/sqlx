@@ -4,7 +4,7 @@ SQLX
 Simple, low-overhead relational database toolkit for modern PHP applications.
 
 ![php-workflow](https://github.com/mnavarrocarter/sqlx/actions/workflows/php.yml/badge.svg?branch=main)
-![code-coverage](https://img.shields.io/badge/Coverage-71%25-yellow.svg?longCache=true&style=flat)
+![code-coverage](https://img.shields.io/badge/Coverage-76%25-yellow.svg?longCache=true&style=flat)
 
 ## Quick Start
 

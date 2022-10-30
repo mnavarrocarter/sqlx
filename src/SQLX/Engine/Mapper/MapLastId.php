@@ -14,20 +14,18 @@ declare(strict_types=1);
  * file that was distributed with this source code.
  */
 
-namespace MNC\SQLX\SQL\Connection;
+namespace MNC\SQLX\Engine\Mapper;
 
-interface Result
+use MNC\SQLX\SQL\Connection\Result;
+
+class MapLastId
 {
-    /**
-     * Returns the last inserted row ID.
-     *
-     * If the database driver does not support this capability, an
-     * empty string is returned.
-     */
-    public function getLastInsertedId(): string;
+    public Result $result;
+    public object $entity;
 
-    /**
-     * Returns the number of the affected rows in the last operation.
-     */
-    public function getAffectedRows(): int;
+    public function __construct(Result $result, object $entity)
+    {
+        $this->result = $result;
+        $this->entity = $entity;
+    }
 }

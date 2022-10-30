@@ -22,8 +22,12 @@ use PHPUnit\Framework\TestCase;
 /**
  * @internal
  *
+ * @covers \MNC\SQLX\SQL\Query\AndN
+ * @covers \MNC\SQLX\SQL\Query\Comp
  * @covers \MNC\SQLX\SQL\Query\Delete
+ * @covers \MNC\SQLX\SQL\Query\OrN
  * @covers \MNC\SQLX\SQL\Query\Parts\Where
+ * @covers \MNC\SQLX\SQL\Query\Raw
  */
 class DeleteTest extends TestCase
 {
