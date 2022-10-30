@@ -20,6 +20,7 @@ use Castor\Context;
 use Generator;
 use IteratorAggregate;
 use MNC\SQLX\Engine\Finder;
+use MNC\SQLX\Engine\Hooks;
 use MNC\SQLX\Engine\Metadata;
 use MNC\SQLX\Engine\PropertyAccessor;
 use MNC\SQLX\Engine\PropertyAccessor\Store;
@@ -197,7 +198,8 @@ final class ForEntities implements Finder, IteratorAggregate
      */
     public function rows(): Rows
     {
-        // TODO: Add context clauses here
+        Hooks\getFilters($this->ctx)->apply($this, $this->metadata);
+
         try {
             $rows = $this->connection->query($this->ctx, $this->query);
         } catch (Connection\ExecutionError $e) {

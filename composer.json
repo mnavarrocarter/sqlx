@@ -22,7 +22,8 @@
   "autoload": {
     "psr-4": {
       "MNC\\": "src"
-    }
+    },
+    "files": ["functions/__autoload.php"]
   },
   "autoload-dev": {
     "psr-4": {

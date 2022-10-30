@@ -82,7 +82,21 @@ final class HydratableRows implements Rows, IteratorAggregate
      */
     public function getIterator(): Generator
     {
+        $isArray = HYDRATION_ARRAY === getHydrationMode($this->ctx);
+
         while (true) {
+            if ($isArray) {
+                $arr = [];
+                $this->scanAssoc($arr);
+                if ([] === $arr) {
+                    break;
+                }
+
+                yield $arr;
+
+                continue;
+            }
+
             $object = null;
             $this->doScan($object);
             if (!is_object($object)) {

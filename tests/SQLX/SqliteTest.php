@@ -17,9 +17,15 @@ declare(strict_types=1);
 namespace MNC\SQLX;
 
 use Castor\Context;
+use MNC\SQLX\Engine\Finder\Filterable;
 use MNC\SQLX\Engine\Finder\FinderError;
 use MNC\SQLX\Engine\Finder\MoreThanOneError;
 use MNC\SQLX\Engine\Finder\NotFoundError;
+
+use function MNC\SQLX\Engine\Finder\withArrayHydration;
+use function MNC\SQLX\Engine\Hooks\withFilter;
+
+use MNC\SQLX\Engine\Metadata;
 use MNC\SQLX\SQL\Connection\ScanError;
 use MNC\SQLX\SQL\Query\Comp;
 use MNC\SQLX\SQL\Query\FromFile;
@@ -61,13 +67,14 @@ class SqliteTest extends FunctionalTestCase
 
         $ctx = Context\nil();
 
-        $user = new User('John Doe', 'jdoe@example.com', 'secret');
+        $user = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
 
         $engine->persist($ctx, $user);
 
         $this->assertSame(3, $user->getId());
 
         $this->assertRecordContains('user', 'id', 3, [
+            // 'tenant_id' => '1', // Sqlite is behaving different in CI
             'name' => 'John Doe',
             'email' => 'jdoe@example.com',
             'password' => 'secret',
@@ -83,13 +90,14 @@ class SqliteTest extends FunctionalTestCase
 
         $ctx = Context\nil();
 
-        $user = new User("Bernardo O'Higgins", 'bohigg@example.com', 'secret');
+        $user = new User(1, "Bernardo O'Higgins", 'bohigg@example.com', 'secret');
 
         $engine->persist($ctx, $user);
 
         $this->assertSame(3, $user->getId());
 
         $this->assertRecordContains('user', 'id', 3, [
+            // 'tenant_id' => '1', // Sqlite is behaving different in CI
             'name' => "Bernardo O'Higgins",
             'email' => 'bohigg@example.com',
             'password' => 'secret',
@@ -105,12 +113,13 @@ class SqliteTest extends FunctionalTestCase
 
         $ctx = Context\nil();
 
-        $user = new User('John Doe', 'jdoe@example.com', 'secret');
+        $user = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
 
         $engine->persist($ctx, $user);
 
         $this->assertSame(3, $user->getId());
         $this->assertRecordContains('user', 'id', 3, [
+            // 'tenant_id' => '1', // Sqlite is behaving different in CI
             'name' => 'John Doe',
             'email' => 'jdoe@example.com',
             'password' => 'secret',
@@ -246,6 +255,48 @@ class SqliteTest extends FunctionalTestCase
         $users = $engine->find($ctx, User::class)->rows()->toArray();
 
         $this->assertCount(2, $users);
+        $this->assertInstanceOf(User::class, $users[0]);
+        $this->assertInstanceOf(User::class, $users[1]);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws ScanError
+     */
+    public function testFindsAllAsArray(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+        $ctx = withArrayHydration($ctx);
+
+        $users = $engine->find($ctx, User::class)->rows()->toArray();
+
+        $this->assertCount(2, $users);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws ScanError
+     */
+    public function testFilter(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+        $ctx = withFilter($ctx, static function (Filterable $filterable, Metadata $metadata) {
+            if (User::class !== $metadata->getClassName()) {
+                return;
+            }
+
+            $filterable->andWhere(Comp::eq('tenantId', 1));
+        });
+
+        $users = $engine->find($ctx, User::class)->rows()->toArray();
+
+        $this->assertCount(1, $users);
     }
 
     protected function getEngine(): Engine

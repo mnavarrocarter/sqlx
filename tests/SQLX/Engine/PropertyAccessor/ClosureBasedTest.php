@@ -29,7 +29,7 @@ class ClosureBasedTest extends TestCase
 {
     public function testItCanAccessPrivateProps(): void
     {
-        $object = new User('John Doe', 'jdoe@example.com', 'secret');
+        $object = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
 
         $assessor = ClosureBased::make($object);
         $this->assertSame('John Doe', $assessor->get(User::class, 'name'));
@@ -37,7 +37,7 @@ class ClosureBasedTest extends TestCase
 
     public function testItCanAccessPrivatePropsFromParent(): void
     {
-        $object = new User('John Doe', 'jdoe@example.com', 'secret');
+        $object = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
 
         $assessor = ClosureBased::make($object);
         $this->assertInstanceOf(\DateTimeInterface::class, $assessor->get(Entity::class, 'createdAt'));
@@ -45,7 +45,7 @@ class ClosureBasedTest extends TestCase
 
     public function testItCanSetPrivateProps(): void
     {
-        $object = new User('John Doe', 'jdoe@example.com', 'secret');
+        $object = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
 
         $assessor = ClosureBased::make($object);
         $assessor->set(User::class, 'email', 'jdoe@domain.com');
@@ -55,7 +55,7 @@ class ClosureBasedTest extends TestCase
 
     public function testItCanSetPrivatePropsFromParent(): void
     {
-        $object = new User('John Doe', 'jdoe@example.com', 'secret');
+        $object = new User(1, 'John Doe', 'jdoe@example.com', 'secret');
         $datetime = new \DateTimeImmutable();
 
         $assessor = ClosureBased::make($object);

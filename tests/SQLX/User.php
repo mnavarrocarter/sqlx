@@ -23,12 +23,14 @@ class User extends Entity
 {
     #[SQLX\Id]
     private int $id;
+    private int $tenantId;
     private string $name;
     private string $email;
     private string $password;
 
-    public function __construct(string $name, string $email, string $password)
+    public function __construct(int $tenantId, string $name, string $email, string $password)
     {
+        $this->tenantId = $tenantId;
         $this->name = $name;
         $this->email = $email;
         $this->password = $password;
@@ -38,6 +40,11 @@ class User extends Entity
     public function getId(): int
     {
         return $this->id;
+    }
+
+    public function getTenantId(): int
+    {
+        return $this->tenantId;
     }
 
     public function getName(): string
