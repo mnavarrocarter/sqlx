@@ -125,36 +125,28 @@ final class ForEntities implements Finder, IteratorAggregate
      */
     public function one(): object
     {
-        $this->query->setLimit(1);
+        $this->query->setLimit(2);
 
         $rows = $this->rows();
 
-        $object = null;
+        $first = null;
+        $second = null;
 
         try {
-            $rows->scan($object);
+            $rows->scan($first, $second);
         } catch (Connection\ScanError $e) {
             throw new FinderError('Could not scan object', 0, $e);
         }
 
-        if (!is_object($object)) {
+        if (!is_object($first)) {
             throw new NotFoundError('Record not found');
         }
 
-        // We peek the next object
-        $next = null;
-
-        try {
-            $rows->scan($next);
-        } catch (Connection\ScanError $e) {
-            throw new FinderError('Could not scan next object', 0, $e);
+        if (is_object($second)) {
+            throw new MoreThanOneError('More than one record found');
         }
 
-        if (is_object($next)) {
-            throw new MoreThanOneError('More than one record returned');
-        }
-
-        return $object;
+        return $first;
     }
 
     /**

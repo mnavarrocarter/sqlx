@@ -17,8 +17,8 @@ declare(strict_types=1);
 namespace MNC\SQLX;
 
 use Castor\Context;
-use DateTimeImmutable;
 use MNC\SQLX\Engine\Finder\FinderError;
+use MNC\SQLX\Engine\Finder\MoreThanOneError;
 use MNC\SQLX\Engine\Finder\NotFoundError;
 use MNC\SQLX\SQL\Connection\ScanError;
 use MNC\SQLX\SQL\Query\Comp;
@@ -34,7 +34,7 @@ use MNC\SQLX\SQL\Query\FromFile;
  */
 class SqliteTest extends FunctionalTestCase
 {
-    public const FILENAME = __DIR__.'/testdata/sqlite/db.sqlite';
+    public const FILENAME = __DIR__.'/testdata/database.sqlite';
 
     protected array $params = ['sqlite://'.self::FILENAME];
 
@@ -57,10 +57,7 @@ class SqliteTest extends FunctionalTestCase
      */
     public function testItInsertsNormally(): void
     {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
+        $engine = $this->getEngine();
 
         $ctx = Context\nil();
 
@@ -68,9 +65,9 @@ class SqliteTest extends FunctionalTestCase
 
         $engine->persist($ctx, $user);
 
-        $this->assertSame(1, $user->getId());
+        $this->assertSame(3, $user->getId());
 
-        $this->assertRecordContains('user', 'id', 1, [
+        $this->assertRecordContains('user', 'id', 3, [
             'name' => 'John Doe',
             'email' => 'jdoe@example.com',
             'password' => 'secret',
@@ -82,10 +79,7 @@ class SqliteTest extends FunctionalTestCase
      */
     public function testItInsertsStringWithQuote(): void
     {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
+        $engine = $this->getEngine();
 
         $ctx = Context\nil();
 
@@ -93,9 +87,9 @@ class SqliteTest extends FunctionalTestCase
 
         $engine->persist($ctx, $user);
 
-        $this->assertSame(1, $user->getId());
+        $this->assertSame(3, $user->getId());
 
-        $this->assertRecordContains('user', 'id', 1, [
+        $this->assertRecordContains('user', 'id', 3, [
             'name' => "Bernardo O'Higgins",
             'email' => 'bohigg@example.com',
             'password' => 'secret',
@@ -107,10 +101,7 @@ class SqliteTest extends FunctionalTestCase
      */
     public function testInsertionAndImmediateUpdate(): void
     {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
+        $engine = $this->getEngine();
 
         $ctx = Context\nil();
 
@@ -118,8 +109,8 @@ class SqliteTest extends FunctionalTestCase
 
         $engine->persist($ctx, $user);
 
-        $this->assertSame(1, $user->getId());
-        $this->assertRecordContains('user', 'id', 1, [
+        $this->assertSame(3, $user->getId());
+        $this->assertRecordContains('user', 'id', 3, [
             'name' => 'John Doe',
             'email' => 'jdoe@example.com',
             'password' => 'secret',
@@ -128,40 +119,17 @@ class SqliteTest extends FunctionalTestCase
         $user->changePassword('secret2');
         $engine->persist($ctx, $user);
 
-        $this->assertRecordContains('user', 'id', 1, [
+        $this->assertRecordContains('user', 'id', 3, [
             'password' => 'secret2',
         ]);
     }
 
     /**
      * @throws EngineError
-     */
-    public function testInsertAndDelete(): void
-    {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
-
-        $ctx = Context\nil();
-
-        $user = new User('John Doe', 'jdoe@example.com', 'secret');
-
-        $engine->persist($ctx, $user);
-
-        $this->assertRecordExists('user', 'id', 1);
-
-        $engine->delete($ctx, $user);
-
-        $this->assertRecordNotExists('user', 'id', 1);
-    }
-
-    /**
-     * @throws EngineError
      * @throws FinderError
      * @throws NotFoundError
      */
-    public function testInsertAndFindWithRawClause(): void
+    public function testFindWithClause(): void
     {
         $engine = Engine::configure($this->getConnection())
             ->withNamer(new Engine\Namer\Underscore())
@@ -169,35 +137,6 @@ class SqliteTest extends FunctionalTestCase
         ;
 
         $ctx = Context\nil();
-
-        $user = new User('John Doe', 'jdoe@example.com', 'secret');
-
-        $engine->persist($ctx, $user);
-
-        $user = $engine->find($ctx, User::class)->andWhere('id = ?', 1)->first();
-
-        $this->assertInstanceOf(User::class, $user);
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
-        $this->assertSame(1, $user->getId());
-    }
-
-    /**
-     * @throws EngineError
-     * @throws FinderError
-     * @throws NotFoundError
-     */
-    public function testInsertAndFindWithClause(): void
-    {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
-
-        $ctx = Context\nil();
-
-        $user = new User('John Doe', 'jdoe@example.com', 'secret');
-
-        $engine->persist($ctx, $user);
 
         $user = $engine
             ->find($ctx, User::class)
@@ -206,8 +145,58 @@ class SqliteTest extends FunctionalTestCase
         ;
 
         $this->assertInstanceOf(User::class, $user);
-        $this->assertInstanceOf(DateTimeImmutable::class, $user->getCreatedAt());
         $this->assertSame(1, $user->getId());
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws MoreThanOneError
+     * @throws NotFoundError
+     */
+    public function testFindAndUpdate(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        /** @var User $user */
+        $user = $engine
+            ->find($ctx, User::class)
+            ->andWhere('id = ?', 2)
+            ->one()
+        ;
+
+        $user->changePassword('secret2');
+
+        $engine->persist($ctx, $user);
+
+        $this->assertRecordContains('user', 'id', 2, [
+            'password' => 'secret2',
+        ]);
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws MoreThanOneError
+     * @throws NotFoundError
+     */
+    public function testFindAndDelete(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $user = $engine
+            ->find($ctx, User::class)
+            ->andWhere('id = ?', 2)
+            ->one()
+        ;
+
+        $engine->delete($ctx, $user);
+
+        $this->assertRecordNotExists('user', 'id', 2);
     }
 
     /**
@@ -215,24 +204,62 @@ class SqliteTest extends FunctionalTestCase
      * @throws FinderError
      * @throws ScanError
      */
-    public function testFindsOneNotFound(): void
+    public function testFindsNoneFoundWithRowsArray(): void
     {
-        $engine = Engine::configure($this->getConnection())
-            ->withNamer(new Engine\Namer\Underscore())
-            ->build()
-        ;
+        $engine = $this->getEngine();
 
         $ctx = Context\nil();
 
         $data = $engine->find($ctx, User::class)
-            ->andWhere(Comp::lt('createdAt', new DateTimeImmutable()))
+            ->andWhere(Comp::eq('name', 'Peter Quinn'))
             ->slice(0, 10)->rows()->toArray();
 
         $this->assertCount(0, $data);
     }
 
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws NotFoundError
+     */
+    public function testFindsMoreThanOne(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $this->expectException(MoreThanOneError::class);
+        $engine->find($ctx, User::class)->one();
+    }
+
+    /**
+     * @throws EngineError
+     * @throws FinderError
+     * @throws ScanError
+     */
+    public function testFindsAll(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+
+        $users = $engine->find($ctx, User::class)->rows()->toArray();
+
+        $this->assertCount(2, $users);
+    }
+
+    protected function getEngine(): Engine
+    {
+        return Engine::configure($this->getConnection())
+            ->withNamer(new Engine\Namer\Underscore())
+            ->build()
+        ;
+    }
+
     protected function getSetupStatements(): iterable
     {
-        yield FromFile::open(__DIR__.'/testdata/sqlite/users.sql');
+        yield FromFile::open(__DIR__.'/testdata/sqlite.schema.sql');
+
+        yield FromFile::open(__DIR__.'/testdata/sqlite.seed.sql');
     }
 }

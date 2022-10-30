@@ -83,7 +83,7 @@ and bi-directional associations).
 Even [Doctrine best practices][doctrine-bp] hint that unnecessary relationships should be avoided,
 and lists a few other topics where the constraints imposed by relationships can affect performance.
 
-Therefore, I would like to avoid full relationship support.
+Therefore, I'm avoiding full relationship support at the moment.
 
 [doctrine-bp]: https://www.doctrine-project.org/projects/doctrine-orm/en/2.13/reference/best-practices.html
 
