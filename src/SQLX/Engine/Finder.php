@@ -65,11 +65,15 @@ interface Finder extends Filterable, Sortable, Sliceable, Traversable
 
     /**
      * {@inheritDoc}
+     *
+     * @throws FinderError
      */
     public function andWhere(Clause|string $clause, mixed ...$args): Finder;
 
     /**
      * {@inheritDoc}
+     *
+     * @throws FinderError
      */
     public function orWhere(Clause|string $clause, mixed ...$args): Finder;
 

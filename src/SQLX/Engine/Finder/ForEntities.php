@@ -197,6 +197,7 @@ final class ForEntities implements Finder, IteratorAggregate
      */
     public function rows(): Rows
     {
+        // TODO: Add context clauses here
         try {
             $rows = $this->connection->query($this->ctx, $this->query);
         } catch (Connection\ExecutionError $e) {
