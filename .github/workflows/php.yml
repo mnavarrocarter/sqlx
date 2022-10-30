@@ -81,7 +81,10 @@ jobs:
     strategy:
       matrix:
         postgres-version:
+          - "12-alpine"
+          - "13-alpine"
           - "14-alpine"
+          - "15-alpine"
         php-version:
           - "8.0"
         operating-system:
