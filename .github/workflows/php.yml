@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     needs: php-code-checks
     env:
-      PGSQL_HOST: postgres
+      PGSQL_HOST: localhost
       PGSQL_PORT: 5432
       PGSQL_USER: sqlx
       PGSQL_PASS: sqlx
@@ -98,6 +98,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
     steps:
       - name: "Checkout Code"
         uses: "actions/checkout@v2"
