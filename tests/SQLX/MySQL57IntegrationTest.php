@@ -235,7 +235,6 @@ class MySQL57IntegrationTest extends IntegrationTestCase
         $this->assertCount(2, $users);
         $this->assertArrayNotHasKey('created_at', $users[0]);
         $this->assertArrayNotHasKey('created_at', $users[1]);
-
     }
 
     public function testFilter(): void

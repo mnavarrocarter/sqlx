@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace MNC\SQLX\Engine;
 
+use Castor\Context;
 use MNC\SQLX\Engine\Mapper\FindClass;
 use MNC\SQLX\Engine\Mapper\RawRecord;
 use MNC\SQLX\Engine\Metadata\NotFound;
@@ -26,7 +27,6 @@ use MNC\SQLX\SQL\Connection;
 use MNC\SQLX\SQL\Mapper;
 use MNC\SQLX\User;
 use PHPUnit\Framework\TestCase;
-use Castor\Context;
 
 /**
  * @internal
@@ -36,7 +36,6 @@ use Castor\Context;
 class EntityMapperTest extends TestCase
 {
     /**
-     * @return void
      * @throws Mapper\ConversionError
      */
     public function testItHandlesToPHPValueMetadataNotFound(): void
@@ -53,7 +52,8 @@ class EntityMapperTest extends TestCase
         $metadataStore->expects($this->once())
             ->method('retrieve')
             ->with(User::class)
-            ->willThrowException(new NotFound());
+            ->willThrowException(new NotFound())
+        ;
 
         $this->expectException(Mapper\ConversionError::class);
 
@@ -61,7 +61,6 @@ class EntityMapperTest extends TestCase
     }
 
     /**
-     * @return void
      * @throws Mapper\ConversionError
      */
     public function testItHandlesToDatabaseValueMetadataInvalid(): void
@@ -76,7 +75,8 @@ class EntityMapperTest extends TestCase
         $metadataStore->expects($this->once())
             ->method('retrieve')
             ->with(\stdClass::class)
-            ->willThrowException(new Metadata\Invalid());
+            ->willThrowException(new Metadata\Invalid())
+        ;
 
         $this->expectException(Mapper\ConversionError::class);
 
@@ -84,7 +84,6 @@ class EntityMapperTest extends TestCase
     }
 
     /**
-     * @return void
      * @throws Mapper\ConversionError
      */
     public function testItHandlesToDatabaseValueMetadataNotFound(): void
@@ -99,19 +98,20 @@ class EntityMapperTest extends TestCase
         $metadataStore->expects($this->once())
             ->method('retrieve')
             ->with(\stdClass::class)
-            ->willThrowException(new NotFound());
+            ->willThrowException(new NotFound())
+        ;
 
         $next->expects($this->once())
             ->method('toDatabaseValue')
             ->with($ctx, $value)
-            ->willReturn($value);
+            ->willReturn($value)
+        ;
 
         $returned = $mapper->toDatabaseValue($ctx, $value);
         $this->assertSame($value, $returned);
     }
 
     /**
-     * @return void
      * @throws Mapper\ConversionError
      */
     public function testItBuildsRawRecord(): void

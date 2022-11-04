@@ -58,8 +58,7 @@ function withArrayHydration(Context $ctx, string ...$exclude): Context
 }
 
 /**
- * @param Context $ctx
- * @return string[]|null
+ * @return null|string[]
  */
 function getArrayHydration(Context $ctx): ?array
 {
