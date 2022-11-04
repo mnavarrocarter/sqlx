@@ -83,7 +83,7 @@ $engine->persist($ctx, $account);
 
 // Upon insertion, we can fetch the last inserted id.
 // We grab it automatically for you if the driver supports it.
-echo $user->getId(); // (int) 1 
+echo $account->getId(); // (int) 1 
 
 // Is easy to find records:
 // SELECT FROM account * WHERE id = 1;
