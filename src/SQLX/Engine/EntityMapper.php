@@ -31,7 +31,8 @@ use MNC\SQLX\SQL\Query\Select;
 use MNC\SQLX\SQL\Query\Update;
 
 /**
- * The EntityMapper is responsible for mapping an entity into.
+ * The EntityMapper is responsible for mapping an entity to and from different
+ * objects related to entities.
  */
 final class EntityMapper implements Mapper
 {
@@ -118,7 +119,7 @@ final class EntityMapper implements Mapper
             self::QUERY_INSERT => $this->buildInsert($ctx, $accessor, $metadata),
             self::QUERY_UPDATE => $this->buildUpdate($ctx, $accessor, $metadata),
             self::QUERY_DELETE => $this->buildDelete($ctx, $accessor, $metadata),
-            default => new RawRecord($metadata->getTableName()),
+            default => $this->buildRawRecord($ctx, $accessor, $metadata),
         };
     }
 

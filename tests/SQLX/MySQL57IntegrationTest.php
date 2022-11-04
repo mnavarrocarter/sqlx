@@ -223,6 +223,21 @@ class MySQL57IntegrationTest extends IntegrationTestCase
         $this->assertCount(2, $users);
     }
 
+    public function testFindsAllAsArrayWithExcluded(): void
+    {
+        $engine = $this->getEngine();
+
+        $ctx = Context\nil();
+        $ctx = Hooks\withArrayHydration($ctx, 'created_at');
+
+        $users = $engine->find($ctx, User::class)->rows()->toArray();
+
+        $this->assertCount(2, $users);
+        $this->assertArrayNotHasKey('created_at', $users[0]);
+        $this->assertArrayNotHasKey('created_at', $users[1]);
+
+    }
+
     public function testFilter(): void
     {
         $engine = $this->getEngine();

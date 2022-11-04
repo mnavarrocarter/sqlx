@@ -83,14 +83,19 @@ final class HydratableRows implements Rows, IteratorAggregate
      */
     public function getIterator(): Generator
     {
-        $isArray = Hooks\HYDRATION_ARRAY === Hooks\getHydrationMode($this->ctx);
+        $excluded =  Hooks\getArrayHydration($this->ctx);
 
         while (true) {
-            if ($isArray) {
+            if (is_array($excluded)) {
                 $arr = [];
                 $this->scanAssoc($arr);
                 if ([] === $arr) {
                     break;
+                }
+
+                // Remove the excluded keys
+                foreach ($excluded as $key) {
+                    unset($arr[$key]);
                 }
 
                 yield $arr;

@@ -50,23 +50,18 @@ function getFilters(Context $ctx): Filter
 /**
  * @internal
  */
-const HYDRATE_KEY = 'sqlx.hydration';
+const ARRAY_HYDRATE_KEY = 'sqlx.array_hydration';
 
-const HYDRATION_ARRAY = 0;
-
-const HYDRATION_OBJECT = 1;
-
-function withArrayHydration(Context $ctx): Context
+function withArrayHydration(Context $ctx, string ...$exclude): Context
 {
-    return Context\withValue($ctx, HYDRATE_KEY, HYDRATION_ARRAY);
+    return Context\withValue($ctx, ARRAY_HYDRATE_KEY, $exclude);
 }
 
-function withObjectHydration(Context $ctx): Context
+/**
+ * @param Context $ctx
+ * @return string[]|null
+ */
+function getArrayHydration(Context $ctx): ?array
 {
-    return Context\withValue($ctx, HYDRATE_KEY, HYDRATION_OBJECT);
-}
-
-function getHydrationMode(Context $ctx): int
-{
-    return $ctx->value(HYDRATE_KEY) ?? HYDRATION_OBJECT;
+    return $ctx->value(ARRAY_HYDRATE_KEY);
 }

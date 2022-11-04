@@ -30,6 +30,7 @@ class User extends Entity
 
     public function __construct(int $tenantId, string $name, string $email, string $password)
     {
+        $this->id = 0;
         $this->tenantId = $tenantId;
         $this->name = $name;
         $this->email = $email;
